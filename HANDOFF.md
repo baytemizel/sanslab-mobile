@@ -1,132 +1,248 @@
 # ŞansLab — HANDOFF
 
-Bu doküman, uygulamayı geliştirici makinesinde çalıştırıp mağazaya göndermek için gereken tüm adımları içerir.
+Uygulamayı geliştirici makinesinde çalıştırıp mağazaya göndermek için gereken
+tüm adımlar. **Fazlar:** 1) authsuz çalışan app · 2) opsiyonel giriş ·
+3) mağaza premium satışı.
 
 ---
 
 ## 0. Önkoşullar
-- Node 20+ ve npm
-- `npm i -g eas-cli`
-- Expo hesabı (`eas login`)
-- Apple Developer + Google Play Console hesapları
-- Firebase, AdMob, RevenueCat hesapları
 
----
+| Araç | Sürüm | Not |
+|------|-------|-----|
+| Node | **≥ 20.19.4** (önerilen 22) | `.nvmrc` var → `nvm use` yeter. Node 18 ile Expo SDK 54 derlenmez. |
+| JDK | 17 | Android Gradle Plugin gereksinimi |
+| Android SDK | Platform 35 + build-tools | `ANDROID_HOME` tanımlı olmalı |
+| eas-cli | son | `npm i -g eas-cli` |
 
-## 1. Kurulum
 ```bash
-cd sanslab
-npm install
-npx expo install      # SDK 54 sürüm hizalaması (sürüm uyuşmazlıklarını giderir)
+nvm use && npm install
 ```
 
-> **Tasarım bağımlılıkları (yeni):** `react-native-svg` (parlayan toplar/glow), `expo-linear-gradient` (gradyanlar), `expo-font` + `@expo-google-fonts/sora` & `@expo-google-fonts/inter` (Sora/Inter), `expo-crypto` (CSPRNG). `react-native-svg` yerel bir modüldür → Expo Go'da çoğu çalışır ama tam doğrulama için **dev build / EAS build** önerilir. Fontlar `_layout.tsx`'te `useFonts` ile yüklenir; yüklenene kadar altın spinner görünür.
+---
+
+## 1. Anahtarsız çalıştırma (sıfır kurulum)
+
+Depo **hiçbir gizli anahtar olmadan derlenir ve çalışır.** `app.config.ts`
+eksik gizli dosyaları algılar ve ilgili eklentileri devre dışı bırakır:
+
+| Eksik olan | Sonuç |
+|---|---|
+| `google-services.json` | Firebase eklentileri (Analytics/Crashlytics/**Auth**) kapanır; giriş ekranı "bu derlemede kullanılamıyor" der, uygulama misafir modunda tam çalışır |
+| RevenueCat anahtarı | Satın alma kapanır, paywall bilgi mesajı gösterir, herkes free katmandadır |
+| AdMob birim kimlikleri | Google **TestIds** kullanılır (kendi reklamına tıklama riski yok) |
+| `GOOGLE_WEB_CLIENT_ID` | "Google ile devam et" butonu gizlenir |
+
+```bash
+npx expo prebuild -p android --clean
+npx expo run:android
+```
 
 ---
 
-## 2. Değiştirilmesi gereken placeholder'lar
+## 2. Doğrulama (CI ile aynı komutlar)
 
-### a) `app.json → extra`
+```bash
+npm run verify
+```
+
+`typecheck` (tsc --noEmit) → `lint` (eslint) → `test:ci` (jest + coverage).
+GitHub Actions için `.github/workflows/ci.yml` hazır; ayrıca gizli dosyalar
+olmadan `expo config`'in çözümlendiğini doğrulayan ayrı bir job içerir.
+
+Test kapsamı: üretim motoru invariant'ları (her oyun × her mod için havuz
+aralığı/adet/tekrarsızlık), istatistik hesapları, geçmiş & favori budama
+mantığı, premium kapıları, çeviri bütünlüğü ve 8 ekranın duman testleri.
+
+---
+
+## 3. ⚠️ Açık karar: Android paket adı
+
+Depodaki `google-services.json` **`com.oditteknoloji.sanslab`** paketi için
+üretilmiş; `app.json` ise **`com.odit.sanslab`** diyor (README ve landing
+sayfası da böyle). Bu uyuşmazlık normalde Gradle'ı
+`processDebugGoogleServices` adımında kırar. `app.config.ts` bunu algılayıp
+Firebase'i devre dışı bırakarak derlemeyi ayakta tutuyor ve konsola uyarı
+basıyor.
+
+**Yayından önce birini seç:**
+
+- **A)** Firebase Console → Android uygulaması ekle → paket adı
+  `com.odit.sanslab` → yeni `google-services.json` indir. *(Mevcut mağaza
+  kimliğini korur; önerilen.)*
+- **B)** `app.json → android.package` ve `ios.bundleIdentifier` değerlerini
+  `com.oditteknoloji.sanslab` yap, README/landing metinlerini güncelle.
+  *(Play'e ilk yükleme yapıldıysa paket adı ARTIK DEĞİŞTİRİLEMEZ.)*
+
+Seçim sonrası: `rm -rf android && npx expo prebuild -p android --clean`.
+
+---
+
+## 4. Değiştirilmesi gereken placeholder'lar
+
+### `app.json → extra`
 | Alan | Şu an | Yapılacak |
 |------|-------|-----------|
 | `eas.projectId` | `REPLACE_WITH_EAS_PROJECT_ID` | `eas init` sonrası otomatik dolar |
-| `revenuecat.ios` | `appl_REPLACE_ME` | RevenueCat iOS public SDK key |
-| `revenuecat.android` | `goog_REPLACE_ME` | RevenueCat Android public SDK key |
-| `admob.banner*/interstitial*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
+| `revenuecat.ios` / `.android` | `*_REPLACE_ME` | RevenueCat public SDK key'leri |
+| `admob.*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
+| `auth.googleWebClientId` | `REPLACE_WITH_...` | Firebase Auth → Google → Web client ID |
 
-### b) `app.json → plugins → react-native-google-mobile-ads`
-`androidAppId` / `iosAppId` şu an Google'ın **test App ID**'leridir. Yayın öncesi kendi AdMob App ID'lerinizle değiştirin.
+Hepsi `.env` ile de geçilebilir — bkz. `.env.example`.
 
-> **Not:** `src/services/ads.ts` geliştirme modunda (`__DEV__`) otomatik olarak Google **TestIds** kullanır; canlıda `extra.admob` değerlerini okur. Yani test ederken kendi reklamlarınıza tıklama riski yoktur.
+### `app.json → plugins`
+- `react-native-google-mobile-ads.androidAppId/iosAppId`: şu an Google'ın
+  **test App ID**'leri. Yayın öncesi kendi AdMob App ID'lerinle değiştir.
+- `@react-native-google-signin/google-signin.iosUrlScheme`: iOS için
+  `GoogleService-Info.plist` içindeki `REVERSED_CLIENT_ID`.
 
-### c) Mağaza/iletişim bağlantıları
-- Gizlilik: `https://odit.com.tr/sanslab/privacy`
-- Şartlar: `https://odit.com.tr/sanslab/terms`
-`store/privacy-policy.md` ve `store/terms.md` içeriğini bu URL'lerde yayınlayın (App Store/Play gizlilik URL'si zorunludur).
-
----
-
-## 3. Firebase
-1. Firebase Console → iki uygulama ekle: iOS `com.odit.sanslab`, Android `com.odit.sanslab`.
-2. **GoogleService-Info.plist** (iOS) ve **google-services.json** (Android) indir.
-3. Proje köküne koy ve `app.json`'a referansla:
-   ```jsonc
-   "ios":     { "googleServicesFile": "./GoogleService-Info.plist", ... },
-   "android": { "googleServicesFile": "./google-services.json", ... }
-   ```
-4. Analytics ve Crashlytics'i etkinleştir. (Kod `src/services/firebase.ts` içinde Expo Go'da zarifçe devre dışı kalır.)
-
-> Bu dosyalar gizli olduğundan repoya eklenmedi; `.gitignore` zaten hariç tutuyor.
+### Mağaza/iletişim bağlantıları
+`app.json → extra.links` altında; kodda hard-code YOK.
+`store/privacy-policy.md` ve `store/terms.md` içeriğini bu URL'lerde
+**gerçekten yayınla** — Play/App Store gizlilik URL'si zorunludur ve
+erişilemezse gönderim reddedilir.
 
 ---
 
-## 4. RevenueCat
+## 5. Firebase (Faz 2 — giriş için gerekli)
+
+1. Firebase Console → iOS `com.odit.sanslab`, Android `com.odit.sanslab`
+   (bkz. §3).
+2. `GoogleService-Info.plist` ve `google-services.json` dosyalarını **proje
+   köküne** koy. `app.config.ts` varlıklarını algılayıp eklentileri kendisi
+   ekler — `app.json`'a elle referans YAZMA.
+3. Authentication → Sign-in method: **E-posta/Şifre**, **Google**,
+   (iOS için) **Apple** sağlayıcılarını aç.
+4. Analytics ve Crashlytics'i etkinleştir.
+
+> Bu dosyalar gizlidir; `.gitignore` zaten hariç tutar.
+
+---
+
+## 6. RevenueCat (Faz 3)
+
 1. RevenueCat projesi oluştur, App Store ve Play uygulamalarını bağla.
 2. **Entitlement:** `premium` (kod bu adı bekliyor — `src/services/revenuecat.ts`).
-3. **Offering:** `default`; içine paketleri ekle (aylık / yıllık / ömür boyu).
-4. App Store Connect ve Play Console'da ürün ID'lerini oluştur ve RevenueCat'e bağla.
-5. iOS/Android public SDK key'lerini `app.json → extra.revenuecat`'e yaz.
+3. **Offering:** `default`; aylık / yıllık / ömür boyu paketleri ekle.
+4. App Store Connect ve Play Console'da ürün ID'lerini oluştur, RevenueCat'e bağla.
+5. Public SDK key'lerini `extra.revenuecat`'e (ya da `.env`) yaz.
 
-Paywall ekranı (`app/paywall.tsx`) offering'i otomatik çeker; sabit fiyat kodlanmaz.
+Paywall offering'i otomatik çeker; **fiyat kodda sabitlenmez**. Yıllık plan
+varsayılan seçilir ve aylığa göre tasarruf yüzdesi rozeti hesaplanır
+(`src/premium/packages.ts`).
+
+Giriş yapan kullanıcı için `Purchases.logIn(uid)` otomatik çağrılır → premium
+cihazlar arasında taşınır.
 
 ---
 
-## 5. AdMob
-1. AdMob'da iki uygulama (iOS/Android) + her biri için **Banner** ve **Interstitial** birimi oluştur.
+## 7. AdMob + rıza (UMP)
+
+1. AdMob'da iki uygulama (iOS/Android) + her biri için **Banner** ve
+   **Interstitial** birimi oluştur.
 2. App ID'leri → `app.json` plugin ayarına; ad unit ID'leri → `extra.admob`.
-3. Davranış: banner free kullanıcıda altta görünür; interstitial her **4.** üretimde gösterilir; premium'da tüm reklamlar kapalıdır (`onGenerateForAds(isPremium)`).
+3. **Privacy & messaging → GDPR mesajı** oluştur (AEA/UK/İsviçre için ZORUNLU).
+
+Davranış (`src/services/ads.ts`, `src/services/consent.ts`):
+- Açılışta önce UMP rızası toplanır; **rıza alınmadan hiçbir reklam isteği
+  yapılmaz** (banner da render edilmez).
+- Rıza yoksa/eksikse kişiselleştirilmemiş reklamlara düşülür.
+- Banner free kullanıcıda oyun ekranının altında.
+- Interstitial her **4.** üretimde ve iki gösterim arasında **en az 90 sn**.
+- Premium'da tüm reklamlar kapalı; satın alma anında `teardownAds()` çalışır.
+- Ayarlar → "Reklam tercihlerim" ile kullanıcı rızasını değiştirebilir.
 
 ---
 
-## 6. Build & Test
+## 8. Build & Test
+
 ```bash
-eas init                       # projectId üretir
+eas init
 eas build --profile development --platform android   # dev client
-# veya tam test:
 eas build --profile preview --platform android       # paylaşılabilir APK
 ```
-Reklam/satın alma/Firebase yalnızca **dev build veya gerçek build** içinde tam çalışır (Expo Go'da değil).
+
+Reklam / satın alma / Firebase yalnızca **dev build veya gerçek build** içinde
+tam çalışır (Expo Go'da değil).
 
 ---
 
-## 7. Mağaza Gönderimi
+## 9. Mağaza Gönderimi
+
 ```bash
 eas build --profile production --platform all
 eas submit  --profile production --platform ios
 eas submit  --profile production --platform android
 ```
 
-### Mağaza metinleri & görseller
-- Metinler: `store/metadata-tr.md`, `store/metadata-en.md`
-- Ekran görüntüleri: `store/screenshots/*.png` — **12 adet** "Gece Çekilişi" mockup'ı (1242×2688): 01 hero, 02 ana ekran, 03 Sayısal+Joker, 04 Süper, 05 Şans Topu, 06 10-kupon, 07 Hızlı On, 08 modlar, 09 Premium, 10 Ayarlar, 11 gündüz teması, 12 dürüstlük notu. App Store için 3–10, Play için 2–8 görsel yükleyebilirsin; sıralamayı vitrin etkisine göre seç (öneri: 01, 02, 03, 06, 09).
-- Gizlilik/Şartlar: `store/privacy-policy.md`, `store/terms.md`
+### Metinler & görseller
+- `store/metadata-tr.md`, `store/metadata-en.md`
+- `store/screenshots/*.png` — 12 adet 1242×2688 mockup
+- `store/privacy-policy.md`, `store/terms.md`
 
-### Önemli inceleme notları (red riskini azaltır)
-- **Yaş derecesi:** 17+/18+ — "Simulated Gambling".
-- İnceleme notuna ekleyin: *"App only generates random numbers for entertainment. No real-money gambling, no betting, no ticket purchase. Not affiliated with any lottery operator."*
-- Apple: Gerçek para kumarı olmadığı için coğrafi kısıt gerekmez; yine de operatörle bağlantısızlık ekranda belirtilir (settings → sorumlu oyun).
+### Play Console — zorunlu formlar
+- **Data safety:** Reklam kimliği (AD_ID), Analytics, Crashlytics; hesap
+  oluşturuluyorsa e-posta + ad.
+- **Hesap silme:** Uygulama içi akış **mevcut** (Ayarlar → Hesap → Hesabımı
+  sil). Play formunda uygulama içi akışı işaretle; ayrıca web URL'si istenirse
+  `support@odit.com.tr` üzerinden manuel süreç tanımla.
+- **İçerik derecelendirmesi:** 17+/18+ — "Simulated Gambling".
+- **İnceleme notu:** *"App only generates random numbers for entertainment.
+  No real-money gambling, no betting, no ticket purchase. Not affiliated with
+  any lottery operator."*
+
+### Release imzalama
+`android/app/build.gradle` release'i **debug keystore** ile imzalar (RN
+şablonu). Yerel `assembleRelease` ALMA — EAS build kendi keystore'unu yönetir.
 
 ---
 
-## 8. Üretim mantığı (özet)
+## 10. Premium kapıları (tek kaynak)
+
+`src/premium/gates.ts`. Paywall'da vaat edilen her faydanın burada gerçek bir
+karşılığı vardır ve `gates.test.ts` bunu doğrular:
+
+| Fayda | Kapı |
+|---|---|
+| Reklamsız | `showsAds()` |
+| Tüm üretim modları | `canUseMode()` — free yalnızca `random` |
+| Sınırsıza yakın geçmiş + favori | `historyLimit()` (free 10) / `favoriteLimit()` (free 3) |
+| Geçmişi dışa aktar | `canExportHistory()` |
+| Erken erişim | — (destek vaadi) |
+
+> **Mağaza uyarısı:** paywall'a yeni bir vaat eklerken önce `gates.ts`'e
+> gerçek karşılığını ekle. Uygulamada bulunmayan bir özelliği satmak
+> App Store 3.1.2 / Play Payments kapsamında **red sebebidir**.
+
+---
+
+## 11. Üretim mantığı (özet)
+
 `src/games/generator.ts`:
-- `secureRandomInt` — `expo-crypto`/Web Crypto + rejection sampling (modulo bias yok), yoksa `Math.random` fallback.
-- `pickUnique` — Fisher-Yates ile tekrarsız çekiliş.
-- Modlar: `random` (saf), `balanced` (tek/çift ve aralık dengesi sezgiseli), `weighted` (frekans — yalnızca görünüm, olasılığı değiştirmez).
-- Oyun kuralları tek kaynak: `src/games/config.ts` (`GAMES`). Yeni oyun eklemek = bu diziye bir `GameDef` eklemek.
+- `secureRandomInt` — `expo-crypto`/Web Crypto + rejection sampling (modulo
+  sapması yok), yoksa `Math.random` fallback.
+- `pickUnique` — kısmi Fisher-Yates ile tekrarsız çekiliş.
+- Modlar: `random` (saf), `balanced` (tek/çift ve aralık dengesi sezgiseli),
+  `lowshare` (anti-kalabalık), `formula` (ŞansFormülü bileşik skor).
+- Oyun kuralları tek kaynak: `src/games/config.ts` (`GAMES`). Yeni oyun
+  eklemek = bu diziye bir `GameDef` eklemek. Premium kapıları oyun bazında
+  DEĞİL özellik bazındadır.
+
+### ŞansFormülü
+- Motor: `src/games/formula.ts` — 7 bileşenli bileşik skor (F frekans, R form,
+  G gecikme, P ikili sinerji, S toplam bandı, B desen, A anti-kalabalık).
+- Veri: `src/games/fstats.ts` — temiz-dönem arşiv istatistikleri gömülü.
+  Yalnızca `sayisal`, `super`, `sans` oyunlarında etkin (`hasFormula()`).
+- Tazeleme: `python3 tools/export_fstats.py <arşiv.xlsx>`.
 
 ---
 
-## 9. Yasal/etik hatırlatma
-Uygulama kazanma şansını artırmaz ve bunu açıkça beyan eder. Dengeli / Az Paylaşılan / ŞansFormülü modları pazarlama amaçlı bir üstünlük olarak **sunulmamalıdır**; mevcut metinler bunları dürüst çerçevede konumlandırır. Bu çerçeveyi koruyun.
+## 12. Yasal/etik hatırlatma
 
-## ŞansFormülü modu (özet)
-
-- Motor: `src/games/formula.ts` — 7 bileşenli bileşik skor (F frekans, R form, G gecikme, P ikili sinerji, S toplam bandı, B desen, A anti-kalabalık; ağırlıklar dosyada `W`).
-- Veri: `src/games/fstats.ts` — temiz-dönem arşiv istatistikleri gömülü (~50 KB). Yalnızca `sayisal`, `super`, `sans` oyunlarında etkin (`hasFormula()`), diğer oyunlarda mod seçeneği görünmez.
-- Tazeleme: yeni çekilişler eklendikçe `python3 tools/export_fstats.py <arşiv.xlsx>` çalıştırın; `fstats.ts` otomatik güncellenir. Analiz CLI'ı: `tools/sans_formulu.py`.
-- Premium: Rastgele dışındaki tüm modlar gibi ŞansFormülü de premium kapısından geçer.
-- Beyan: mod açıklaması "kazanma olasılığını artırmaz" ifadesini içerir — kaldırmayın.
+Uygulama kazanma şansını artırmaz ve bunu açıkça beyan eder. Dengeli /
+Az Paylaşılan / ŞansFormülü modları pazarlama amaçlı bir üstünlük olarak
+**sunulmamalıdır**. Bu beyanların metinde kalması `i18n.test.ts` tarafından
+otomatik doğrulanır — testleri kırmadan kaldıramazsın, bu kasıtlıdır.
 
 ---
 

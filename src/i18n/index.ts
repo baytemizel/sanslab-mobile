@@ -16,6 +16,9 @@ function deviceLang(): Lang {
 }
 
 export async function initI18n(): Promise<void> {
+  // Hot reload / test yeniden çalıştırmalarında ikinci init hata verir.
+  if (i18n.isInitialized) return;
+
   let saved: string | null = null;
   try {
     saved = await AsyncStorage.getItem(LANGUAGE_KEY);

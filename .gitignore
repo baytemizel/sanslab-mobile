@@ -1,18 +1,25 @@
 # dependencies
 node_modules/
+
 # expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-# native
+
+# native (CNG — `npx expo prebuild` ile üretilir, elle düzenlenmez)
 ios/
 android/
+
 # secrets & google services
 google-services.json
 GoogleService-Info.plist
 .env
 .env.local
+
+# tests
+coverage/
+
 # misc
 *.log
 .DS_Store

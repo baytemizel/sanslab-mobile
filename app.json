@@ -8,18 +8,12 @@
     "scheme": "sanslab",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#08071A"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.oditteknoloji.sanslab",
+      "bundleIdentifier": "com.odit.sanslab",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserTrackingUsageDescription": "Bu tanımlayıcı, sana daha alakalı reklamlar göstermek için kullanılır."
@@ -29,30 +23,47 @@
       }
     },
     "android": {
-      "package": "com.oditteknoloji.sanslab",
-      "googleServicesFile": "./google-services.json",
+      "package": "com.odit.sanslab",
       "versionCode": 1,
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#08071A"
       },
-      "permissions": [
-        "com.google.android.gms.permission.AD_ID"
+      "permissions": ["com.google.android.gms.permission.AD_ID"],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
       "expo-router",
       "expo-localization",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
           "backgroundColor": "#08071A",
-          "imageWidth": 200
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "dark": {
+            "image": "./assets/splash.png",
+            "backgroundColor": "#08071A"
+          }
         }
       ],
       "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "@react-native-firebase/crashlytics",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_CLIENT_ID"
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
@@ -64,17 +75,14 @@
       [
         "expo-build-properties",
         {
-          "ios": {
-            "useFrameworks": "static"
-          }
+          "ios": { "useFrameworks": "static" },
+          "android": { "minSdkVersion": 24 }
         }
       ]
     ],
     "extra": {
       "router": {},
-      "eas": {
-        "projectId": "93ce342c-547b-4e32-bae1-e0783dcc9e96"
-      },
+      "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" },
       "revenuecat": {
         "ios": "appl_REPLACE_ME",
         "android": "goog_REPLACE_ME"
@@ -84,8 +92,15 @@
         "bannerIos": "ca-app-pub-XXXX/XXXX",
         "interstitialAndroid": "ca-app-pub-XXXX/XXXX",
         "interstitialIos": "ca-app-pub-XXXX/XXXX"
+      },
+      "auth": {
+        "googleWebClientId": "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID"
+      },
+      "links": {
+        "privacy": "https://odit.com.tr/sanslab/privacy",
+        "terms": "https://odit.com.tr/sanslab/terms",
+        "support": "mailto:support@odit.com.tr"
       }
-    },
-    "owner": "tayfuntemizel"
+    }
   }
 }

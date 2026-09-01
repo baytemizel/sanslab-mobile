@@ -1,47 +1,183 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Pressable, Modal, Linking } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Modal,
+  Linking,
+  Platform,
+  ToastAndroid,
+} from "react-native";
 import { useTranslation } from "react-i18next";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import Constants from "expo-constants";
 
 import { Segmented, PrimaryButton } from "../src/components/Buttons";
 import { useApp } from "../src/state/AppContext";
-import { setLanguage, Lang } from "../src/i18n";
-import { restore, hasPremium } from "../src/services/revenuecat";
+import type { Lang } from "../src/i18n";
+import { hasPremium, restore } from "../src/services/revenuecat";
+import { isAuthAvailable } from "../src/services/auth";
+import { showPrivacyOptions } from "../src/services/consent";
+import { appVersion, links } from "../src/services/env";
 import { fonts } from "../src/theme/colors";
 
-const PRIVACY_URL = "https://odit.com.tr/sanslab/privacy";
-const TERMS_URL = "https://odit.com.tr/sanslab/terms";
+type FeatherName = React.ComponentProps<typeof Feather>["name"];
 
 export default function Settings() {
-  const { t, i18n } = useTranslation();
-  const { theme, themePref, setThemePref, refreshPremium, isPremium } = useApp();
+  const { t } = useTranslation();
+  const {
+    theme,
+    themePref,
+    setThemePref,
+    lang,
+    setLang,
+    refreshPremium,
+    isPremium,
+    user,
+    resetOnboarding,
+    history,
+  } = useApp();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+
   const [responsibleOpen, setResponsibleOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const changeLang = (l: Lang) => setLanguage(l);
+  const toast = useCallback((msg: string) => {
+    if (Platform.OS === "android") ToastAndroid.show(msg, ToastAndroid.SHORT);
+  }, []);
 
-  const Row = ({ icon, label, right, onPress }: { icon: any; label: string; right?: React.ReactNode; onPress?: () => void }) => (
-    <Pressable onPress={onPress} style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <View style={[styles.rowIcon, { backgroundColor: theme.dark ? "rgba(244,192,74,0.12)" : "#FFF6E2" }]}>
-        <Feather name={icon} size={16} color={theme.gold} />
+  const doRestore = useCallback(async () => {
+    setBusy(true);
+    const info = await restore();
+    setBusy(false);
+    if (info && hasPremium(info)) {
+      await refreshPremium();
+      toast(t("premium.restored"));
+    } else {
+      toast(t("premium.restoreNone"));
+    }
+  }, [refreshPremium, toast, t]);
+
+  const doShowOnboarding = useCallback(async () => {
+    await resetOnboarding();
+    router.replace("/onboarding");
+  }, [resetOnboarding, router]);
+
+  const doAdPreferences = useCallback(async () => {
+    const shown = await showPrivacyOptions();
+    if (!shown) toast(t("settings.adPrefsUnavailable"));
+  }, [toast, t]);
+
+  const Row = ({
+    icon,
+    label,
+    right,
+    onPress,
+    danger,
+  }: {
+    icon: FeatherName;
+    label: string;
+    right?: React.ReactNode;
+    onPress?: () => void;
+    danger?: boolean;
+  }) => (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+      style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}
+    >
+      <View
+        style={[
+          styles.rowIcon,
+          {
+            backgroundColor: theme.dark ? "rgba(244,192,74,0.12)" : "#FFF6E2",
+          },
+        ]}
+      >
+        <Feather name={icon} size={16} color={danger ? "#F5333B" : theme.gold} />
       </View>
-      <Text style={[styles.rowLabel, { color: theme.text }]}>{label}</Text>
+      <Text style={[styles.rowLabel, { color: danger ? "#F5333B" : theme.text }]}>
+        {label}
+      </Text>
       <View style={{ flex: 1 }} />
-      {right ?? <Feather name="chevron-right" size={18} color={theme.subText} />}
+      {right ??
+        (onPress ? (
+          <Feather name="chevron-right" size={18} color={theme.subText} />
+        ) : null)}
     </Pressable>
   );
 
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 60, paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: 20,
+        paddingTop: insets.top + 60,
+        paddingBottom: insets.bottom + 44,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
       <Stack.Screen options={{ title: t("common.settings") }} />
 
-      <Text style={[styles.section, { color: theme.subText }]}>{t("settings.language")}</Text>
-      <Segmented options={[{ value: "tr", label: "Türkçe" }, { value: "en", label: "English" }]} value={(i18n.language as Lang) ?? "tr"} onChange={changeLang} />
+      {/* hesap */}
+      <Text style={[styles.section, { color: theme.subText }]}>
+        {t("account.title")}
+      </Text>
+      <View style={{ gap: 11 }}>
+        <Row
+          icon={user ? "user-check" : "user"}
+          label={user?.displayName ?? user?.email ?? t("account.guestTitle")}
+          onPress={() =>
+            user || !isAuthAvailable()
+              ? router.push("/account")
+              : router.push("/(auth)/sign-in")
+          }
+          right={
+            <Text style={[styles.rowValue, { color: theme.subText }]}>
+              {user ? t("account.manage") : t("auth.signIn")}
+            </Text>
+          }
+        />
+        <Row
+          icon="clock"
+          label={t("history.title")}
+          onPress={() => router.push("/history")}
+          right={
+            <Text style={[styles.rowValue, { color: theme.subText }]}>
+              {history.length}
+            </Text>
+          }
+        />
+        {!isPremium && (
+          <Row
+            icon="star"
+            label={t("premium.title")}
+            onPress={() => router.push("/paywall")}
+          />
+        )}
+      </View>
 
-      <Text style={[styles.section, { color: theme.subText, marginTop: 26 }]}>{t("settings.theme")}</Text>
+      {/* dil */}
+      <Text style={[styles.section, { color: theme.subText, marginTop: 26 }]}>
+        {t("settings.language")}
+      </Text>
+      <Segmented
+        options={[
+          { value: "tr", label: "Türkçe" },
+          { value: "en", label: "English" },
+        ]}
+        value={lang}
+        onChange={(v) => setLang(v as Lang)}
+      />
+
+      {/* tema */}
+      <Text style={[styles.section, { color: theme.subText, marginTop: 26 }]}>
+        {t("settings.theme")}
+      </Text>
       <Segmented
         options={[
           { value: "system", label: t("settings.themeSystem") },
@@ -49,29 +185,86 @@ export default function Settings() {
           { value: "dark", label: t("settings.themeDark") },
         ]}
         value={themePref}
-        onChange={setThemePref as any}
+        onChange={setThemePref}
       />
 
-      <Text style={[styles.section, { color: theme.subText, marginTop: 26 }]}>{t("settings.about")}</Text>
+      {/* hakkında */}
+      <Text style={[styles.section, { color: theme.subText, marginTop: 26 }]}>
+        {t("settings.about")}
+      </Text>
       <View style={{ gap: 11 }}>
-        <Row icon="shield" label={t("settings.responsible")} onPress={() => setResponsibleOpen(true)} />
-        <Row icon="lock" label={t("settings.privacy")} onPress={() => Linking.openURL(PRIVACY_URL)} />
-        <Row icon="file-text" label={t("settings.terms")} onPress={() => Linking.openURL(TERMS_URL)} />
+        <Row
+          icon="shield"
+          label={t("settings.responsible")}
+          onPress={() => setResponsibleOpen(true)}
+        />
+        <Row
+          icon="compass"
+          label={t("settings.showOnboarding")}
+          onPress={doShowOnboarding}
+        />
         {!isPremium && (
-          <Row icon="refresh-ccw" label={t("settings.restore")} onPress={async () => { const info = await restore(); if (info && hasPremium(info)) await refreshPremium(); }} />
+          <Row
+            icon="sliders"
+            label={t("settings.adPrefs")}
+            onPress={doAdPreferences}
+          />
         )}
-        <Row icon="info" label={t("settings.version")} right={<Text style={{ color: theme.subText, fontFamily: fonts.body }}>{Constants.expoConfig?.version ?? "1.0.0"}</Text>} />
+        <Row
+          icon="lock"
+          label={t("settings.privacy")}
+          onPress={() => Linking.openURL(links.privacy)}
+        />
+        <Row
+          icon="file-text"
+          label={t("settings.terms")}
+          onPress={() => Linking.openURL(links.terms)}
+        />
+        <Row
+          icon="mail"
+          label={t("settings.support")}
+          onPress={() => Linking.openURL(links.support)}
+        />
+        {!isPremium && (
+          <Row
+            icon="refresh-ccw"
+            label={busy ? t("settings.restoring") : t("settings.restore")}
+            onPress={busy ? undefined : doRestore}
+          />
+        )}
+        <Row
+          icon="info"
+          label={t("settings.version")}
+          right={
+            <Text style={[styles.rowValue, { color: theme.subText }]}>
+              {appVersion}
+            </Text>
+          }
+        />
       </View>
 
       <Modal visible={responsibleOpen} transparent animationType="slide">
         <View style={styles.modalBg}>
-          <View style={[styles.modalCard, { backgroundColor: theme.cardSolid, borderColor: theme.border }]}>
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: theme.cardSolid, borderColor: theme.border },
+            ]}
+          >
             <View style={[styles.modalIcon, { backgroundColor: theme.goldFill }]}>
               <Feather name="shield" size={24} color={theme.onGold} />
             </View>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>{t("disclaimer.responsibleTitle")}</Text>
-            <Text style={[styles.modalBody, { color: theme.subText }]}>{t("disclaimer.responsibleBody")}</Text>
-            <PrimaryButton label={t("common.close")} onPress={() => setResponsibleOpen(false)} variant="gold" />
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {t("disclaimer.responsibleTitle")}
+            </Text>
+            <Text style={[styles.modalBody, { color: theme.subText }]}>
+              {t("disclaimer.responsibleBody")}
+            </Text>
+            <PrimaryButton
+              label={t("common.close")}
+              onPress={() => setResponsibleOpen(false)}
+              variant="gold"
+            />
           </View>
         </View>
       </Modal>
@@ -80,13 +273,65 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  section: { fontSize: 12, fontFamily: fonts.bodyBold, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 },
-  row: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 13 },
-  rowIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  section: {
+    fontSize: 12,
+    fontFamily: fonts.bodyBold,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  rowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rowLabel: { fontSize: 15, fontFamily: fonts.bodyMed, fontWeight: "600" },
-  modalBg: { flex: 1, backgroundColor: "rgba(5,4,15,0.7)", justifyContent: "flex-end" },
-  modalCard: { borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, padding: 26, paddingBottom: 44 },
-  modalIcon: { width: 52, height: 52, borderRadius: 16, alignSelf: "center", alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  modalTitle: { fontSize: 20, fontFamily: fonts.displayHeavy, fontWeight: "900", textAlign: "center", marginBottom: 12 },
-  modalBody: { fontSize: 14, fontFamily: fonts.body, lineHeight: 22, textAlign: "center", marginBottom: 22 },
+  rowValue: { fontSize: 13.5, fontFamily: fonts.body },
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(5,4,15,0.7)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    padding: 26,
+    paddingBottom: 44,
+  },
+  modalIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: fonts.displayHeavy,
+    fontWeight: "900",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  modalBody: {
+    fontSize: 14,
+    fontFamily: fonts.body,
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 22,
+  },
 });

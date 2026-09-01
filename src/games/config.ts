@@ -53,8 +53,10 @@ export interface GameDef {
    * When present, the referenced pool's `count` is overridden by user choice.
    */
   variableCount?: VariableCount;
-  /** Whether this game is locked behind premium in the free tier */
-  premiumOnly?: boolean;
+  /**
+   * Premium kapıları oyun bazında DEĞİL, özellik bazında uygulanır —
+   * bkz. src/premium/gates.ts. Beş oyunun tamamı free katmanda açıktır.
+   */
   /** Short tagline translation key */
   taglineKey: string;
 }

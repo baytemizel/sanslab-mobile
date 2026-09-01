@@ -56,6 +56,9 @@ Türkiye'nin 5 şans oyunu için saniyeler içinde kupon üreten,
 
 ### Freemium ayrımı
 
+Kapıların **tek kaynağı** [`src/premium/gates.ts`](src/premium/gates.ts); paywall'da
+vaat edilen her faydanın orada gerçek bir karşılığı olduğunu bir test doğrular.
+
 | Özellik | Ücretsiz | Premium |
 |---|:---:|:---:|
 | Tüm 5 oyun | ✅ | ✅ |
@@ -63,10 +66,22 @@ Türkiye'nin 5 şans oyunu için saniyeler içinde kupon üreten,
 | Rastgele mod | ✅ | ✅ |
 | İstatistik paneli | ✅ | ✅ |
 | Dengeli · Az Paylaşılan · ŞansFormülü | — | ✅ |
-| Kupon geçmişi & favoriler | — | ✅ |
+| Kupon geçmişi | son 10 | 500 |
+| Favoriler | 3 | sınırsıza yakın |
+| Geçmişi dışa aktar | — | ✅ |
 | Reklamlar | Banner + her 4. üretimde interstitial | Yok |
 
-Paketler: Aylık / Yıllık / Ömür Boyu (fiyatlar mağazadan dinamik; kodda sabit fiyat yok).
+Paketler: Aylık / Yıllık / Ömür Boyu (fiyatlar mağazadan dinamik; kodda sabit
+fiyat yok). Yıllık plan varsayılan seçilir ve aylığa göre tasarruf yüzdesi
+rozetiyle gösterilir.
+
+### Hesap — **opsiyonel**
+
+Uygulamanın tamamı üyeliksiz çalışır. Giriş yalnızca Premium'u ve kupon
+geçmişini cihazlar arasında taşımak içindir (E-posta · Google · Apple).
+Firebase yapılandırılmamış bir derlemede giriş ekranı kendini kapatır ve
+uygulama misafir modunda tam çalışmaya devam eder. Mağaza zorunluluğu olan
+**uygulama içi hesap silme** akışı mevcuttur (Ayarlar → Hesap → Hesabımı sil).
 
 ---
 
@@ -104,12 +119,16 @@ SKOR(K) = 0.15·F + 0.10·R + 0.10·G + 0.10·P + 0.15·S + 0.10·B + 0.30·A
 
 ```
 app/                    Expo Router ekranları
-├── _layout.tsx         Sağlayıcılar · Sora/Inter font yükleme · Backdrop · init sırası
-├── index.tsx           Ana ekran (oyun listesi, premium şeridi, ilk açılış uyarısı)
+├── _layout.tsx         Splash kontrolü · font/i18n yükleme · onboarding kapısı
+├── index.tsx           Ana ekran (oyun listesi, premium şeridi, geçmiş girişi)
+├── onboarding.tsx      4 slaytlık ilk açılış + yasal beyan (tek seferlik)
 ├── game/[id].tsx       Üretim ekranı (4 mod, tekli/10'lu, İstatistik girişi)
 ├── stats/[id].tsx      İstatistik paneli (frekans grafiği + adillik okuması)
+├── history.tsx         Kupon geçmişi · favoriler · filtreler · dışa aktarma
 ├── paywall.tsx         RevenueCat paketleri / satın alma / geri yükleme
-└── settings.tsx        Dil, tema, yasal bağlantılar
+├── account.tsx         Profil · çıkış · uygulama içi HESAP SİLME (mağaza zorunluluğu)
+├── settings.tsx        Hesap · dil · tema · reklam tercihleri · yasal bağlantılar
+└── (auth)/             OPSİYONEL giriş: sign-in · sign-up · forgot-password
 
 src/
 ├── games/              ALAN MANTIĞI (UI'sız, test edilebilir)
@@ -119,52 +138,87 @@ src/
 │   ├── formula.ts      ŞansFormülü: 7 bileşenli skor + güdümlü örnekleme
 │   ├── fstats.ts       Gömülü temiz-dönem arşiv istatistikleri (~50 KB)
 │   └── stats.ts        Frekans + ki-kare tabanlı adillik okuması
-├── components/         Ball (parlayan SVG top) · Backdrop · CouponRow · GameCard · Buttons · AdBanner
-├── services/           firebase · revenuecat · ads (Expo Go'da zarif düşüş)
-├── state/              AppContext (tema · dil · premium)
+├── premium/            gates.ts (kapı politikası) · packages.ts (paket sunumu)
+├── components/         Ball · Backdrop · CouponRow · GameCard · Buttons · Field · AdBanner
+├── services/           env · auth · firebase · revenuecat · ads · consent (UMP)
+├── state/              AppContext (tema · dil · premium · oturum) · history
+├── test/               Sağlayıcılarla saran render yardımcısı
 ├── i18n/               tr · en
 └── theme/              Gece/Gündüz token'ları + Sora/Inter
 
+app.config.ts           Gizli dosya VARSA Firebase'i açar, YOKSA kapatır;
+                        paket adı uyuşmazlığını yakalar; .env ile ezilebilir
 landing/                Ürün landing page (statik, GitHub Pages'e uygun)
 web-demo/               Tarayıcıda çalışan tam demo (tek dosya, 4 mod dahil)
 store/                  TR/EN metadata · gizlilik · koşullar · 12 ekran görseli · galeri
 docs/                   Teknik PDF · Tanıtım PDF · Sunum PPTX · Formül raporu
-tools/                  sans_formulu.py (analiz CLI) · export_fstats.py (istatistik tazeleme)
+tools/                  sans_formulu.py (analiz CLI) · export_fstats.py
 scripts/                gen_assets.py · gen_mockups.py (marka görselleri üretimi)
 ```
 
-**Başlatma sırası** (`_layout.tsx`): fontlar → i18n → RevenueCat → Firebase → AdMob; hazır olana dek altın yükleme göstergesi. Native servisler Expo Go'da devre dışı kalır, uygulama çalışmaya devam eder.
+**Açılış akışı** (`_layout.tsx`): native splash **elle** tutulur → fontlar +
+i18n + kalıcı durum yüklenir → splash kapanır. Reklam/satın alma/Firebase
+başlatmaları ilk kareyi bloklamaz (`Promise.allSettled`). İlk açılışta
+onboarding'e yönlendirilir; **auth kapısı yoktur.** Anahtar/native modül
+eksikse servisler sessizce devre dışı kalır ve uygulama çalışmaya devam eder.
 
 ### Teknoloji
 
-`expo ~54` · `react-native 0.81` / `react 19` (New Architecture) · `expo-router 6` · `expo-crypto` · `react-native-svg` · `expo-linear-gradient` · `expo-font` + `@expo-google-fonts/sora & inter` · `react-native-purchases` (RevenueCat) · `react-native-google-mobile-ads` · `@react-native-firebase` (Analytics + Crashlytics) · `i18next` · `AsyncStorage`
+`expo ~54` · `react-native 0.81` / `react 19` (New Architecture) · `expo-router 6` ·
+`expo-crypto` · `react-native-svg` · `expo-linear-gradient` · `expo-splash-screen` ·
+`expo-font` + `@expo-google-fonts/sora & inter` · `react-native-purchases` (RevenueCat) ·
+`react-native-google-mobile-ads` + UMP · `@react-native-firebase` (Analytics ·
+Crashlytics · **Auth**) · `@react-native-google-signin` · `expo-apple-authentication` ·
+`i18next` · `AsyncStorage`
+
+**Kalite:** `tsc --noEmit` (strict) · `eslint` (eslint-config-expo, 0 uyarı) ·
+`jest` + `@testing-library/react-native` — 111 test / 6 paket · GitHub Actions CI.
 
 ---
 
 ## 🚀 Kurulum
 
+**Node ≥ 20.19.4 gerekir** (`.nvmrc` → `nvm use`). Node 18 ile Expo SDK 54
+derlenmez.
+
 ```bash
 git clone https://github.com/<kullanici>/sanslab.git
 cd sanslab
-npm install
-npx expo install          # SDK 54 sürüm hizalaması
+nvm use && npm install
 
-# Geliştirme (native modüller nedeniyle dev build önerilir)
-eas build --profile development --platform android
-npx expo start --dev-client
+# Anahtarsız çalışır: eksik gizli dosyalar otomatik algılanır
+npx expo prebuild -p android --clean
+npx expo run:android
 ```
 
-> `react-native-svg`, RevenueCat, AdMob ve Firebase native modüllerdir — tam doğrulama için **dev build / EAS build** kullanın. Expo Go'da UI ve üretim mantığı çalışır; satın alma/reklam/analytics zarifçe devre dışı kalır.
+Doğrulama (CI ile birebir aynı):
 
-### Yapılandırma (`app.json → extra`)
+```bash
+npm run verify
+```
 
-| Anahtar | Açıklama |
-|---|---|
-| `eas.projectId` | `eas init` doldurur |
-| `revenuecat.ios` / `.android` | RevenueCat public SDK key'leri (`appl_…` / `goog_…`) |
-| `admob.*` | Banner/Interstitial birim kimlikleri (dev'de otomatik TestIds) |
+> `react-native-svg`, RevenueCat, AdMob ve Firebase native modüllerdir — tam
+> doğrulama için **dev build / EAS build** kullanın. Expo Go'da UI ve üretim
+> mantığı çalışır; satın alma/reklam/analytics zarifçe devre dışı kalır.
 
-Firebase: `google-services.json` (Android) + `GoogleService-Info.plist` (iOS) ekleyip `app.json`'a bağlayın. Örnek ortam değişkenleri: [`.env.example`](.env.example). Ayrıntılı adım adım: [`HANDOFF.md`](HANDOFF.md).
+### Yapılandırma
+
+Değerler `app.json → extra` altındadır ve **ortam değişkenleriyle ezilebilir**
+(bkz. [`app.config.ts`](app.config.ts), [`.env.example`](.env.example)).
+Hiçbiri zorunlu değildir; eksik olan SDK sessizce kapanır.
+
+| Anahtar | Env | Açıklama |
+|---|---|---|
+| `eas.projectId` | — | `eas init` doldurur |
+| `revenuecat.ios` / `.android` | `REVENUECAT_*_KEY` | Public SDK key'leri (`appl_…` / `goog_…`) |
+| `admob.*` | `ADMOB_*` | Banner/Interstitial birimleri (dev'de otomatik TestIds) |
+| `auth.googleWebClientId` | `GOOGLE_WEB_CLIENT_ID` | Boşsa "Google ile devam et" gizlenir |
+| `links.*` | — | Gizlilik / koşullar / destek adresleri |
+
+Firebase: `google-services.json` (Android) ve/veya `GoogleService-Info.plist`
+(iOS) dosyalarını **proje köküne** koymanız yeterli — `app.config.ts`
+varlıklarını algılayıp eklentileri kendisi ekler, `app.json`'a elle referans
+yazmayın. Ayrıntılı adım adım: [`HANDOFF.md`](HANDOFF.md).
 
 ---
 
@@ -172,18 +226,27 @@ Firebase: `google-services.json` (Android) + `GoogleService-Info.plist` (iOS) ek
 
 Lansman kontrol listesi (ayrıntılar `HANDOFF.md`):
 
+- [ ] **Paket adı kararı** — `google-services.json` `com.oditteknoloji.sanslab`, `app.json` `com.odit.sanslab` diyor (`HANDOFF.md §3`)
 - [ ] `eas init` → projectId
 - [ ] RevenueCat: entitlement `premium`, offering `default`, Aylık/Yıllık/Ömür Boyu ürünleri mağazalarda tanımlı
 - [ ] AdMob gerçek birim kimlikleri + plugin App ID'leri
-- [ ] Firebase yapılandırma dosyaları
+- [ ] AdMob **Privacy & messaging → GDPR mesajı** oluşturuldu (AEA/UK/CH zorunlu)
+- [ ] Firebase yapılandırma dosyaları + Auth sağlayıcıları (E-posta · Google · Apple) açık
 - [ ] Gizlilik & Koşullar URL'leri yayında (repo: [`store/privacy-policy.md`](store/privacy-policy.md), [`store/terms.md`](store/terms.md))
+- [ ] Play **Data safety** formu: AD_ID · Analytics · Crashlytics · (hesap varsa) e-posta & ad
+- [ ] Play **hesap silme** beyanı — uygulama içi akış mevcut (Ayarlar → Hesap)
 - [ ] Yaş derecesi: **simulated gambling (17+/18+)**
 - [ ] İnceleme notu: *gerçek para yok, bahis yok, Milli Piyango İdaresi ile bağlantısız, tüm modlar "olasılığı artırmaz" beyanlı*
 - [ ] Ekran görselleri: `store/screenshots/` (öneri sırası: 01, 02, 03, 06, 09)
 - [ ] TR/EN metadata: [`store/metadata-tr.md`](store/metadata-tr.md) / [`store/metadata-en.md`](store/metadata-en.md)
 - [ ] `eas build --profile production --platform all` → `eas submit`
 
-**Uyumluluk duruşu:** ŞansFormülü dahil hiçbir özellik kazanç vaadi olarak sunulmaz; ilk açılışta dürüstlük uyarısı, ayarlarda sorumlu oyun bilgisi (TR: Yeşilay 115) vardır. iOS `ITSAppUsesNonExemptEncryption=false` ayarlıdır. Hesap yok; kuponlar yalnızca cihazda.
+**Uyumluluk duruşu:** ŞansFormülü dahil hiçbir özellik kazanç vaadi olarak
+sunulmaz; ilk açılış onboarding'inde dürüstlük ve 18 yaş beyanı, ayarlarda
+sorumlu oyun bilgisi (TR: Yeşilay 115) vardır — bu metinlerin korunduğunu
+`src/i18n/__tests__/i18n.test.ts` doğrular. iOS
+`ITSAppUsesNonExemptEncryption=false` ayarlıdır. Hesap **opsiyoneldir**;
+kuponlar yalnızca cihazda saklanır, sunucuya gönderilmez.
 
 ---
 

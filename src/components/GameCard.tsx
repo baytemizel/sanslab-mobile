@@ -13,16 +13,17 @@ interface Props {
   onPress: () => void;
 }
 
-/** Oyun kartı: parlayan renk küresi + isim + kural özeti + kilit. */
+/** Oyun kartı: parlayan renk küresi + isim + kural özeti. */
 export default function GameCard({ game, onPress }: Props) {
   const { t } = useTranslation();
-  const { theme, isPremium } = useApp();
-  const locked = !!game.premiumOnly && !isPremium;
+  const { theme } = useApp();
   const gid = game.id;
 
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t(game.nameKey)}
       style={({ pressed }) => [
         styles.card,
         {
@@ -52,7 +53,6 @@ export default function GameCard({ game, onPress }: Props) {
           <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
             {t(game.nameKey)}
           </Text>
-          {locked && <Feather name="lock" size={13} color={theme.gold} />}
         </View>
         <Text style={[styles.tagline, { color: theme.subText }]} numberOfLines={1}>
           {t(game.taglineKey)}

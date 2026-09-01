@@ -126,7 +126,7 @@ export function formulaGenerate(
   if (!st) return null;
   const CAND = rows > 1 ? 6000 : 3500;
   const seen = new Set<string>();
-  const scored: Array<[number, number[]]> = [];
+  const scored: [number, number[]][] = [];
   for (let i = 0; i < CAND; i++) {
     const c =
       i % 10 < 7 ? guidedPick(min, max, count, st, rnd) : uniformPick(min, max, count);
