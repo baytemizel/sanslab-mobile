@@ -11,7 +11,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.odit.sanslab",
+      "bundleIdentifier": "com.oditteknoloji.sanslab",
       "buildNumber": "1",
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.odit.sanslab",
+      "package": "com.oditteknoloji.sanslab",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {

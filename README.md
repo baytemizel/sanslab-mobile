@@ -226,7 +226,8 @@ yazmayın. Ayrıntılı adım adım: [`HANDOFF.md`](HANDOFF.md).
 
 Lansman kontrol listesi (ayrıntılar `HANDOFF.md`):
 
-- [ ] **Paket adı kararı** — `google-services.json` `com.oditteknoloji.sanslab`, `app.json` `com.odit.sanslab` diyor (`HANDOFF.md §3`)
+- [x] Uygulama kimliği: **`com.oditteknoloji.sanslab`** (Android + iOS, `google-services.json` ile eşleşiyor — ilk yayından sonra değiştirilemez)
+- [ ] Firebase'e **iOS** uygulaması ekle + `GoogleService-Info.plist`
 - [ ] `eas init` → projectId
 - [ ] RevenueCat: entitlement `premium`, offering `default`, Aylık/Yıllık/Ömür Boyu ürünleri mağazalarda tanımlı
 - [ ] AdMob gerçek birim kimlikleri + plugin App ID'leri
@@ -277,6 +278,6 @@ kuponlar yalnızca cihazda saklanır, sunucuya gönderilmez.
 
 <div align="center">
 
-**support@odit.com.tr** · com.odit.sanslab
+**support@odit.com.tr** · com.oditteknoloji.sanslab
 
 </div>

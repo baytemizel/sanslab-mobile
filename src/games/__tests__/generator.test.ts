@@ -18,6 +18,8 @@ import {
 import { hasFormula } from "../fstats";
 
 const REPEATS = 40;
+/** ŞansFormülü her çağrıda binlerce aday skorlar — daha az tekrar yeter. */
+const FORMULA_REPEATS = 5;
 
 function expectedCount(game: GameDef, poolIndex: number, variableCount?: number) {
   const pool = game.pools[poolIndex];
@@ -93,8 +95,9 @@ describe("generateCoupon — tüm oyunlar × tüm modlar", () => {
 
   for (const game of GAMES) {
     for (const mode of modes) {
+      const repeats = mode === "formula" ? FORMULA_REPEATS : REPEATS;
       it(`${game.id} / ${mode}: geçerli kupon üretir`, () => {
-        for (let i = 0; i < REPEATS; i++) {
+        for (let i = 0; i < repeats; i++) {
           const coupon = generateCoupon(game, { mode });
           assertValidCoupon(game, coupon);
           expect(coupon.mode).toBe(mode);

@@ -79,6 +79,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "[app.config] google-services.json / GoogleService-Info.plist bulunamadı — " +
         "Firebase eklentileri devre dışı. Analytics/Crashlytics/Auth çalışmaz, derleme çalışır."
     );
+  } else if (hasAndroidFirebase !== hasIosFirebase) {
+    // Tek config iki platforma da hizmet ediyor: eksik olan tarafta iOS pod /
+    // Android Gradle adımı yapılandırma dosyası bulamaz.
+    const missing = hasIosFirebase
+      ? "google-services.json (Android)"
+      : "GoogleService-Info.plist (iOS)";
+    console.warn(
+      `[app.config] ⚠️  ${missing} eksik. Firebase eklentileri açık, bu yüzden ` +
+        `o platform için derleme başarısız olur. Dosyayı proje köküne ekleyin ` +
+        `(bkz. HANDOFF.md §5).`
+    );
   }
 
   const env = process.env;

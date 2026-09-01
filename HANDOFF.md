@@ -56,25 +56,30 @@ mantığı, premium kapıları, çeviri bütünlüğü ve 8 ekranın duman testl
 
 ---
 
-## 3. ⚠️ Açık karar: Android paket adı
+## 3. Uygulama kimliği
 
-Depodaki `google-services.json` **`com.oditteknoloji.sanslab`** paketi için
-üretilmiş; `app.json` ise **`com.odit.sanslab`** diyor (README ve landing
-sayfası da böyle). Bu uyuşmazlık normalde Gradle'ı
-`processDebugGoogleServices` adımında kırar. `app.config.ts` bunu algılayıp
-Firebase'i devre dışı bırakarak derlemeyi ayakta tutuyor ve konsola uyarı
-basıyor.
+**`com.oditteknoloji.sanslab`** — Android `package` ve iOS `bundleIdentifier`
+aynıdır. Depodaki `google-services.json` de bu paket için üretilmiştir, bu
+yüzden Firebase kutudan çıktığı gibi çalışır.
 
-**Yayından önce birini seç:**
+> **Bu değer artık dondurulmuştur.** Play Store'a ilk yükleme yapıldıktan sonra
+> paket adı **DEĞİŞTİRİLEMEZ**; değiştirmek yeni bir uygulama listelemesi
+> demektir (yorumlar, indirmeler, aboneler sıfırlanır).
 
-- **A)** Firebase Console → Android uygulaması ekle → paket adı
-  `com.odit.sanslab` → yeni `google-services.json` indir. *(Mevcut mağaza
-  kimliğini korur; önerilen.)*
-- **B)** `app.json → android.package` ve `ios.bundleIdentifier` değerlerini
-  `com.oditteknoloji.sanslab` yap, README/landing metinlerini güncelle.
-  *(Play'e ilk yükleme yapıldıysa paket adı ARTIK DEĞİŞTİRİLEMEZ.)*
+`app.config.ts`, `google-services.json` içindeki paket adıyla `app.json`
+arasındaki her uyuşmazlığı yakalar: eşleşmezse Gradle'ı
+`processDebugGoogleServices` adımında kırmak yerine Firebase eklentilerini
+devre dışı bırakır ve konsola ne yapılacağını yazar. Paket adı ya da Firebase
+dosyası değişirse:
 
-Seçim sonrası: `rm -rf android && npx expo prebuild -p android --clean`.
+```bash
+rm -rf android && npx expo prebuild -p android --clean
+```
+
+### iOS için kalan adım
+Firebase Console'da **iOS** uygulaması da `com.oditteknoloji.sanslab` paket
+kimliğiyle eklenmeli ve `GoogleService-Info.plist` proje köküne konmalıdır
+(şu an yalnızca Android dosyası mevcut).
 
 ---
 
@@ -106,8 +111,8 @@ erişilemezse gönderim reddedilir.
 
 ## 5. Firebase (Faz 2 — giriş için gerekli)
 
-1. Firebase Console → iOS `com.odit.sanslab`, Android `com.odit.sanslab`
-   (bkz. §3).
+1. Firebase Console → Android `com.oditteknoloji.sanslab` (**mevcut**),
+   iOS `com.oditteknoloji.sanslab` (**eklenmeli** — bkz. §3).
 2. `GoogleService-Info.plist` ve `google-services.json` dosyalarını **proje
    köküne** koy. `app.config.ts` varlıklarını algılayıp eklentileri kendisi
    ekler — `app.json`'a elle referans YAZMA.

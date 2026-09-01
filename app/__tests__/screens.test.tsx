@@ -44,7 +44,10 @@ import HistoryScreen from "../history";
 import Paywall from "../paywall";
 import Settings from "../settings";
 import Account from "../account";
+import StatsScreen from "../stats/[id]";
 import SignIn from "../(auth)/sign-in";
+import SignUp from "../(auth)/sign-up";
+import ForgotPassword from "../(auth)/forgot-password";
 import { GAMES } from "../../src/games/config";
 import tr from "../../src/i18n/tr";
 
@@ -141,6 +144,26 @@ describe("Oyun ekranı", () => {
     renderWithProviders(<GameScreen />);
     await settle();
     expect(screen.getByText(`${tr.generator.count}: 5`)).toBeTruthy();
+  });
+});
+
+describe("İstatistik ekranı", () => {
+  it("grafik, sıcak/soğuk listeler ve 'geçmiş ≠ gelecek' uyarısı gösterir", async () => {
+    mockParams = { id: "sayisal" };
+    renderWithProviders(<StatsScreen />);
+    await settle();
+
+    expect(screen.getByText(tr.statistics.disclaimer)).toBeTruthy();
+    expect(screen.getAllByText(tr.statistics.hot).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(tr.statistics.cold).length).toBeGreaterThan(0);
+    expect(screen.getByText(tr.statistics.sampleNote)).toBeTruthy();
+  });
+
+  it("bilinmeyen oyunda çökmez", async () => {
+    mockParams = { id: "yok" };
+    renderWithProviders(<StatsScreen />);
+    await settle();
+    expect(screen.getByText("—")).toBeTruthy();
   });
 });
 
@@ -246,5 +269,33 @@ describe("Hesap / giriş — auth yapılandırılmamış derleme", () => {
 
     fireEvent.press(screen.getByText(tr.auth.continueAsGuest));
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  it("kayıt ekranı da misafir çıkışı sunar ve çökmez", async () => {
+    renderWithProviders(<SignUp />);
+    await settle();
+    expect(screen.getByText(tr.auth.signUpTitle)).toBeTruthy();
+    expect(screen.getByText(tr.auth.continueAsGuest)).toBeTruthy();
+  });
+
+  it("şifre sıfırlama ekranı render olur", async () => {
+    renderWithProviders(<ForgotPassword />);
+    await settle();
+    expect(screen.getByText(tr.auth.resetTitle)).toBeTruthy();
+    expect(screen.getByText(tr.auth.sendReset)).toBeTruthy();
+  });
+
+  it("şifre sıfırlama, hesabın varlığını sızdırmadan onay verir", async () => {
+    renderWithProviders(<ForgotPassword />);
+    await settle();
+
+    fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "a@b.co");
+    fireEvent.press(screen.getByText(tr.auth.sendReset));
+    await settle();
+
+    // Auth yapılandırılmamış → "unavailable" hatası gösterilir, çökme olmaz.
+    await waitFor(() =>
+      expect(screen.getByText(tr.auth.error.unavailable)).toBeTruthy()
+    );
   });
 });
