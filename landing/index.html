@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ŞansLab — Şansını dene, kuponunu üret</title>
+<meta name="description" content="Sayısal Loto, Süper Loto, Şans Topu, On Numara ve Hızlı On için saniyeler içinde kupon üret. Kriptografik rastgelelik, ŞansFormülü modu, TR/EN. iOS & Android.">
+<meta property="og:title" content="ŞansLab — Şansını dene, kuponunu üret">
+<meta property="og:description" content="5 şans oyunu için akıllı kupon üreteci. Dürüst, hızlı, reklamsız Premium.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#FFD876;--goldF:#F4C04A;--goldD:#E0A02E;--mist:#A9A3D6;--cloud:#F4F2FF;
+  --card:rgba(255,255,255,.045);--cardS:#1C1947;--line:rgba(255,255,255,.10);
+  --disp:'Sora',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--cloud);
+  background:radial-gradient(70% 42% at 50% 0%,rgba(244,192,74,.16),transparent 62%),linear-gradient(165deg,#1C1746,#070617);
+  min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+/* nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:26px 0}
+.brand{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:-.5px}
+.brand b{color:var(--gold)}
+.navlinks{display:flex;gap:26px;color:var(--mist);font-size:14px;font-weight:600}
+.navlinks a:hover{color:var(--gold)}
+.cta-sm{background:linear-gradient(135deg,#FFD876,#F4C04A,#E0A02E);color:#241A05;font-weight:800;
+  padding:10px 20px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(244,192,74,.35)}
+/* hero */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:56px 0 80px}
+.hero h1{font-family:var(--disp);font-weight:800;font-size:52px;line-height:1.08;letter-spacing:-1.5px}
+.hero h1 b{color:var(--gold)}
+.hero p{color:var(--mist);font-size:18px;line-height:1.6;margin:20px 0 8px;max-width:480px}
+.hero-balls{display:flex;gap:12px;margin:22px 0 30px}
+.hball{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--disp);font-weight:700;font-size:17px;background:#0E0C24;position:relative}
+.hball::after{content:"";position:absolute;left:11px;top:8px;width:15px;height:10px;border-radius:50%;background:rgba(255,255,255,.28)}
+.store-btns{display:flex;gap:14px;flex-wrap:wrap}
+.store-btn{display:flex;align-items:center;gap:11px;border:1px solid var(--line);background:var(--card);
+  border-radius:15px;padding:12px 20px;transition:.2s}
+.store-btn:hover{border-color:var(--gold);transform:translateY(-2px)}
+.store-btn .ic{font-size:26px}
+.store-btn small{display:block;color:var(--mist);font-size:10.5px;letter-spacing:.5px}
+.store-btn span{font-family:var(--disp);font-weight:700;font-size:16px}
+.demo-link{display:inline-flex;align-items:center;gap:8px;color:var(--gold);font-weight:700;font-size:14px;margin-top:18px}
+.hero-shot{display:flex;justify-content:center}
+.hero-shot img{width:100%;max-width:360px;border-radius:34px;box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 80px rgba(244,192,74,.14)}
+/* sections */
+section{padding:72px 0}
+.eyebrow{color:var(--goldD);font-weight:800;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;font-family:var(--disp)}
+h2{font-family:var(--disp);font-weight:800;font-size:36px;letter-spacing:-1px;margin:10px 0 14px}
+.lead{color:var(--mist);font-size:16.5px;line-height:1.65;max-width:640px}
+/* games */
+.games{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:38px}
+.game{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:22px 18px;text-align:center;transition:.2s}
+.game:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.22)}
+.gorb{width:52px;height:52px;border-radius:50%;margin:0 auto 14px;position:relative}
+.gorb::after{content:"";position:absolute;left:12px;top:9px;width:17px;height:11px;border-radius:50%;background:rgba(255,255,255,.5)}
+.game b{font-family:var(--disp);font-size:16px;display:block}
+.game small{color:var(--mist);font-size:12px;display:block;margin-top:5px;line-height:1.4}
+/* features */
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+.feat{border:1px solid var(--line);background:var(--card);border-radius:22px;padding:24px}
+.fic{width:44px;height:44px;border-radius:14px;background:rgba(244,192,74,.14);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px}
+.feat b{font-family:var(--disp);font-size:17px;display:block;margin-bottom:8px}
+.feat p{color:var(--mist);font-size:13.5px;line-height:1.6}
+/* formula */
+.formula-box{border:1.5px solid rgba(244,192,74,.5);background:rgba(244,192,74,.07);border-radius:26px;padding:34px;margin-top:38px;display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center}
+.fcode{font-family:ui-monospace,SFMono-Regular,monospace;background:rgba(0,0,0,.35);border:1px solid var(--line);
+  border-radius:14px;padding:16px 18px;color:var(--gold);font-size:14px;margin:16px 0;overflow-x:auto;white-space:nowrap}
+.formula-box p{color:var(--mist);font-size:14.5px;line-height:1.65}
+.fstats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fstat{border:1px solid var(--line);background:rgba(0,0,0,.25);border-radius:16px;padding:16px;text-align:center}
+.fstat b{font-family:var(--disp);font-size:26px;color:var(--gold);display:block}
+.fstat small{color:var(--mist);font-size:11.5px;line-height:1.4;display:block;margin-top:5px}
+/* screens */
+.shots{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:38px}
+.shots img{width:100%;border-radius:22px;border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45);transition:.25s}
+.shots img:hover{transform:translateY(-6px)}
+/* premium */
+.prem{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:38px}
+.plan{border:1px solid var(--line);background:var(--card);border-radius:24px;padding:28px}
+.plan.gold{border:2px solid var(--goldF);background:rgba(244,192,74,.08)}
+.plan h3{font-family:var(--disp);font-size:20px;margin-bottom:18px}
+.plan.gold h3{color:var(--gold)}
+.plan li{list-style:none;color:var(--mist);font-size:14px;padding:7px 0;display:flex;gap:10px;align-items:center}
+.plan.gold li{color:var(--cloud)}
+.plan li::before{content:"•";color:var(--gold);font-weight:800}
+/* honesty */
+.honesty{text-align:center;max-width:680px;margin:0 auto}
+.hicon{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#FFD876,#F4C04A);color:#241A05;
+  display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;margin:0 auto 22px}
+.honesty p{color:var(--mist);font-size:15.5px;line-height:1.75;margin-top:14px}
+/* footer */
+footer{border-top:1px solid var(--line);padding:40px 0 56px;margin-top:40px}
+.frow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
+.fsub{color:var(--mist);font-size:12.5px;line-height:1.7}
+.flinks{display:flex;gap:22px;color:var(--mist);font-size:13px}
+.flinks a:hover{color:var(--gold)}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding-top:24px}
+  .hero h1{font-size:38px}
+  .games{grid-template-columns:repeat(2,1fr)}
+  .feats{grid-template-columns:1fr}
+  .formula-box{grid-template-columns:1fr}
+  .shots{grid-template-columns:repeat(2,1fr)}
+  .prem{grid-template-columns:1fr}
+  .navlinks{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand">Şans<b>Lab</b></div>
+    <div class="navlinks">
+      <a href="#oyunlar">Oyunlar</a><a href="#ozellikler">Özellikler</a>
+      <a href="#formul">ŞansFormülü</a><a href="#ekranlar">Ekranlar</a><a href="#premium">Premium</a>
+    </div>
+    <a class="cta-sm" href="#indir">İndir</a>
+  </nav>
+
+  <header class="hero" id="indir">
+    <div>
+      <h1>Şansını dene,<br><b>kuponunu üret</b></h1>
+      <p>Sayısal Loto, Süper Loto, Şans Topu, On Numara ve Hızlı On için saniyeler içinde kupon. Kriptografik rastgelelik, akıllı üretim modları, Türkçe & İngilizce.</p>
+      <div class="hero-balls">
+        <div class="hball" style="border:3px solid #F5333B;color:#F5333B;box-shadow:0 0 18px #F5333B66">07</div>
+        <div class="hball" style="border:3px solid #FFA62B;color:#FFA62B;box-shadow:0 0 18px #FFA62B66">23</div>
+        <div class="hball" style="border:3px solid #FF49A3;color:#FF49A3;box-shadow:0 0 18px #FF49A366">34</div>
+        <div class="hball" style="border:3px solid #9D62FF;color:#9D62FF;box-shadow:0 0 18px #9D62FF66">11</div>
+        <div class="hball" style="border:3px solid #6C8BFF;color:#6C8BFF;box-shadow:0 0 18px #6C8BFF66">49</div>
+      </div>
+      <div class="store-btns">
+        <a class="store-btn" href="#"><span class="ic"></span><span><small>App Store'dan</small>İndir</span></a>
+        <a class="store-btn" href="#"><span class="ic">▶</span><span><small>Google Play'den</small>İndir</span></a>
+      </div>
+      <a class="demo-link" href="../web-demo/index.html">Tarayıcıda dene — canlı demo ↗</a>
+    </div>
+    <div class="hero-shot"><img src="../store/screenshots/02_home.png" alt="ŞansLab ana ekran"></div>
+  </header>
+
+  <section id="oyunlar">
+    <div class="eyebrow">Oyunlar</div>
+    <h2>Beş oyun, tek yer</h2>
+    <p class="lead">Her oyunun kuralı doğru, kuponun saniyeler içinde hazır.</p>
+    <div class="games">
+      <div class="game"><div class="gorb" style="background:radial-gradient(circle at 35% 30%,#fff,#F5333B 45%)"></div><b>Sayısal Loto</b><small>6 sayı (1–90)<br>+ Joker</small></div>
+      <div class="game"><div class="gorb" style="background:radial-gradient(circle at 35% 30%,#fff,#FFA62B 45%)"></div><b>Süper Loto</b><small>6 sayı (1–60)</small></div>
+      <div class="game"><div class="gorb" style="background:radial-gradient(circle at 35% 30%,#fff,#FF49A3 45%)"></div><b>Şans Topu</b><small>5 sayı (1–34)<br>+ 1 (1–14)</small></div>
+      <div class="game"><div class="gorb" style="background:radial-gradient(circle at 35% 30%,#fff,#9D62FF 45%)"></div><b>On Numara</b><small>10 sayı (1–80)</small></div>
+      <div class="game"><div class="gorb" style="background:radial-gradient(circle at 35% 30%,#fff,#6C8BFF 45%)"></div><b>Hızlı On</b><small>1–10 sayı seç<br>(1–80)</small></div>
+    </div>
+  </section>
+
+  <section id="ozellikler">
+    <div class="eyebrow">Özellikler</div>
+    <h2>Hızlı, adil, akıllı</h2>
+    <div class="feats">
+      <div class="feat"><div class="fic">⚡</div><b>Saniyeler içinde kupon</b><p>Oyun seç, dokun — tekli ya da tek dokunuşla 10 kupon. İkisi de ücretsiz.</p></div>
+      <div class="feat"><div class="fic">🎲</div><b>Kriptografik rastgelelik</b><p>CSPRNG + reddetme örneklemesi: modülo yanlılığı yok, her sayı gerçekten eşit olasılıklı.</p></div>
+      <div class="feat"><div class="fic">🧠</div><b>4 üretim modu</b><p>Rastgele · Dengeli · Az Paylaşılan · ŞansFormülü — her biri ne yaptığını açıkça söyler.</p></div>
+      <div class="feat"><div class="fic">📊</div><b>Sayı istatistikleri</b><p>Frekans grafiği, sıcak/soğuk toplar ve "dağılım adil mi?" okuması — açık etiketle.</p></div>
+      <div class="feat"><div class="fic">🌗</div><b>Gece & Gündüz teması</b><p>Parlayan çekiliş topları ve altın vurgularla imza "Gece Çekilişi" tasarımı; aydınlık varyantıyla.</p></div>
+      <div class="feat"><div class="fic">🌍</div><b>TR & EN · çevrimdışı</b><p>Tam yerelleştirme; internet olmadan da kupon üretir. Kupona tek dokunuşla kopyala.</p></div>
+    </div>
+  </section>
+
+  <section id="formul">
+    <div class="eyebrow">ŞansFormülü</div>
+    <h2>Arşiv analizli bileşik skor</h2>
+    <p class="lead">3.496 temiz çekilişlik Milli Piyango arşivi analiz edildi; format değişimleri (6/49→6/90, 6/54→6/60) veriden tespit edilip dönemler ayrıştırıldı. Formül yedi bileşenle her kombinasyonu puanlar, binlerce aday arasından en yüksek skorluyu seçer.</p>
+    <div class="formula-box">
+      <div>
+        <div class="fcode">SKOR = 0.15·F + 0.10·R + 0.10·G + 0.10·P + 0.15·S + 0.10·B + 0.30·A</div>
+        <p><b style="color:var(--cloud)">F</b> frekans · <b style="color:var(--cloud)">R</b> son-50 form · <b style="color:var(--cloud)">G</b> gecikme · <b style="color:var(--cloud)">P</b> ikili sinerji · <b style="color:var(--cloud)">S</b> toplam bandı · <b style="color:var(--cloud)">B</b> desen uyumu · <b style="color:var(--cloud)">A</b> anti-kalabalık.<br><br>
+        Dürüst not: geçmiş istatistikler geleceği tahmin etmez ve bu mod kazanma olasılığını artırmaz — istatistiksel olarak skorlanmış, kalabalık şablonlardan uzak kombinasyonlar üretir.</p>
+      </div>
+      <div class="fstats">
+        <div class="fstat"><b>3.496</b><small>temiz çekiliş<br>analiz edildi</small></div>
+        <div class="fstat"><b>7</b><small>skor bileşeni</small></div>
+        <div class="fstat"><b>6.000</b><small>aday kombinasyon<br>her üretimde</small></div>
+        <div class="fstat"><b>~4.9/6</b><small>kupon başına<br>sıcak-liste sayısı</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ekranlar">
+    <div class="eyebrow">Ekranlar</div>
+    <h2>Gece Çekilişi tasarımı</h2>
+    <div class="shots">
+      <img src="../store/screenshots/03_sayisal.png" alt="Sayısal Loto">
+      <img src="../store/screenshots/06_on_batch.png" alt="10 kupon">
+      <img src="../store/screenshots/07_hizli.png" alt="Hızlı On">
+      <img src="../store/screenshots/09_premium.png" alt="Premium">
+    </div>
+  </section>
+
+  <section id="premium">
+    <div class="eyebrow">Premium</div>
+    <h2>Temel ücretsiz, Premium ayrıcalık</h2>
+    <div class="prem">
+      <div class="plan">
+        <h3>Ücretsiz</h3>
+        <li>Tüm 5 oyun</li><li>Tekli & 10'lu kupon</li><li>Rastgele mod</li>
+        <li>İstatistik paneli</li><li>Reklam destekli</li>
+      </div>
+      <div class="plan gold">
+        <h3>★ Premium</h3>
+        <li>Reklamsız deneyim</li><li>Dengeli · Az Paylaşılan · ŞansFormülü modları</li>
+        <li>Kupon geçmişi & favoriler</li><li>Sınırsız, kesintisiz üretim</li>
+        <li>Aylık / Yıllık / Ömür Boyu</li>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="honesty">
+      <div class="hicon">!</div>
+      <h2>Şeffaf ve dürüst</h2>
+      <p>Şans oyunlarında her çekiliş bağımsızdır. Geçmiş sonuçlar geleceği tahmin etmez ve hiçbir yöntem — ŞansFormülü dahil — kazanma olasılığını artırmaz. ŞansLab yalnızca kupon doldurmayı kolaylaştıran, dürüst bir eğlence aracıdır; gerçek para ile oyun, bahis veya kupon satışı içermez. 18+ · Milli Piyango İdaresi ile bağlantılı değildir.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="frow">
+      <div>
+        <div class="brand">Şans<b>Lab</b></div>
+        <div class="fsub">© 2026 Odit Teknoloji ve İletişim Hizmetleri Ticaret A.Ş.<br>support@odit.com.tr · com.odit.sanslab</div>
+      </div>
+      <div class="flinks">
+        <a href="../store/privacy-policy.md">Gizlilik</a>
+        <a href="../store/terms.md">Kullanım Koşulları</a>
+        <a href="../web-demo/index.html">Canlı Demo</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

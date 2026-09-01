@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ŞansLab — Mağaza Ekranları</title>
+<style>
+  :root{--gold:#F4C04A;--gold-hi:#FFD876;--mist:#A9A3D6;--cloud:#F4F2FF;--line:rgba(255,255,255,.10)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(60% 40% at 50% 0%,rgba(244,192,74,.14),transparent 60%),linear-gradient(160deg,#1C1746,#070617);
+    color:var(--cloud);min-height:100vh}
+  header{text-align:center;padding:64px 24px 32px}
+  .brand{font-size:40px;font-weight:800;letter-spacing:-1px}
+  .brand b{color:var(--gold-hi)}
+  .tag{color:var(--mist);margin-top:10px;font-size:16px}
+  .count{display:inline-block;margin-top:18px;padding:7px 16px;border:1px solid rgba(244,192,74,.4);
+    border-radius:999px;color:var(--gold-hi);font-size:13px;background:rgba(244,192,74,.08)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:30px;
+    max-width:1500px;margin:0 auto;padding:24px 28px 80px}
+  .card{margin:0}
+  .frame{border-radius:26px;overflow:hidden;border:1px solid var(--line);
+    background:#0c0a1c;box-shadow:0 18px 50px rgba(0,0,0,.5);transition:transform .25s,box-shadow .25s}
+  .frame:hover{transform:translateY(-6px);box-shadow:0 26px 70px rgba(244,192,74,.18)}
+  .frame img{display:block;width:100%;height:auto}
+  figcaption{padding:16px 6px 4px;display:flex;flex-direction:column;gap:3px}
+  .t{font-weight:700;font-size:16px}
+  .s{color:var(--mist);font-size:13px}
+  footer{text-align:center;color:var(--mist);font-size:12.5px;padding:0 24px 56px;line-height:1.7}
+  footer b{color:var(--gold-hi)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">Şans<b>Lab</b></div>
+    <div class="tag">Gece Çekilişi — mağaza ekran tasarımları</div>
+    <div class="count">12 ekran · 1242 × 2688 · App Store / Play uyumlu</div>
+  </header>
+  <main class="grid">
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/01_hero.png" alt="Vitrin"></div><figcaption><span class="t">Vitrin</span><span class="s">Tüm şans oyunları tek yerde</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/02_home.png" alt="Ana ekran"></div><figcaption><span class="t">Ana ekran</span><span class="s">Bir oyun seç, dokun, üret</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/03_sayisal.png" alt="Sayısal Loto"></div><figcaption><span class="t">Sayısal Loto</span><span class="s">6 sayı (1–90) + Joker · tekli/10'lu</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/04_super.png" alt="Süper Loto"></div><figcaption><span class="t">Süper Loto</span><span class="s">6 sayı (1–60)</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/05_sans.png" alt="Şans Topu"></div><figcaption><span class="t">Şans Topu</span><span class="s">5 sayı (1–34) + 1 (1–14)</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/06_on_batch.png" alt="10 kupon"></div><figcaption><span class="t">10 kupon</span><span class="s">Tek mi, 10'lu mu? Sen seç — ücretsiz</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/07_hizli.png" alt="Hızlı On"></div><figcaption><span class="t">Hızlı On</span><span class="s">1–10 arası seç, sonra üret</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/08_modes.png" alt="Üretim modları"></div><figcaption><span class="t">Üretim modları</span><span class="s">Rastgele · Dengeli · Frekans</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/09_premium.png" alt="Premium"></div><figcaption><span class="t">Premium</span><span class="s">Reklamsız ve sınırsız</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/10_settings.png" alt="Ayarlar"></div><figcaption><span class="t">Ayarlar</span><span class="s">TR/EN · açık/koyu tema</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/11_light.png" alt="Gündüz teması"></div><figcaption><span class="t">Gündüz teması</span><span class="s">Aydınlık görünüm</span></figcaption></figure>
+    <figure class="card"><div class="frame"><img loading="lazy" src="screenshots/12_disclaimer.png" alt="Dürüstlük notu"></div><figcaption><span class="t">Dürüstlük notu</span><span class="s">Kazanma vaadi yok</span></figcaption></figure>
+  </main>
+  <footer>
+    Tam çözünürlüklü PNG'ler <b>store/screenshots/</b> klasöründedir.<br>
+    Dürüst not: ŞansLab kazanma olasılığını artırmaz; yalnızca eğlence amaçlı kupon üreteci.
+  </footer>
+</body>
+</html>
