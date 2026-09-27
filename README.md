@@ -209,7 +209,7 @@ Hiçbiri zorunlu değildir; eksik olan SDK sessizce kapanır.
 
 | Anahtar | Env | Açıklama |
 |---|---|---|
-| `eas.projectId` | — | `eas init` doldurur |
+| `eas.projectId` | — | EAS proje kimliği (ayarlı) |
 | `revenuecat.ios` / `.android` | `REVENUECAT_*_KEY` | Public SDK key'leri (`appl_…` / `goog_…`) |
 | `admob.*` | `ADMOB_*` | Banner/Interstitial birimleri (dev'de otomatik TestIds) |
 | `auth.googleWebClientId` | `GOOGLE_WEB_CLIENT_ID` | Boşsa "Google ile devam et" gizlenir |
@@ -228,7 +228,7 @@ Lansman kontrol listesi (ayrıntılar `HANDOFF.md`):
 
 - [x] Uygulama kimliği: **`com.oditteknoloji.sanslab`** (Android + iOS, `google-services.json` ile eşleşiyor — ilk yayından sonra değiştirilemez)
 - [ ] Firebase'e **iOS** uygulaması ekle + `GoogleService-Info.plist`
-- [ ] `eas init` → projectId
+- [x] EAS `projectId`: `93ce342c-547b-4e32-bae1-e0783dcc9e96`
 - [ ] RevenueCat: entitlement `premium`, offering `default`, Aylık/Yıllık/Ömür Boyu ürünleri mağazalarda tanımlı
 - [ ] AdMob gerçek birim kimlikleri + plugin App ID'leri
 - [ ] AdMob **Privacy & messaging → GDPR mesajı** oluşturuldu (AEA/UK/CH zorunlu)

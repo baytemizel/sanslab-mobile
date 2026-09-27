@@ -88,7 +88,7 @@ kimliğiyle eklenmeli ve `GoogleService-Info.plist` proje köküne konmalıdır
 ### `app.json → extra`
 | Alan | Şu an | Yapılacak |
 |------|-------|-----------|
-| `eas.projectId` | `REPLACE_WITH_EAS_PROJECT_ID` | `eas init` sonrası otomatik dolar |
+| `eas.projectId` | `93ce342c-…-e0783dcc9e96` ✅ | Ayarlandı — dokunmayın |
 | `revenuecat.ios` / `.android` | `*_REPLACE_ME` | RevenueCat public SDK key'leri |
 | `admob.*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
 | `auth.googleWebClientId` | `REPLACE_WITH_...` | Firebase Auth → Google → Web client ID |

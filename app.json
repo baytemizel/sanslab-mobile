@@ -82,7 +82,7 @@
     ],
     "extra": {
       "router": {},
-      "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" },
+      "eas": { "projectId": "93ce342c-547b-4e32-bae1-e0783dcc9e96" },
       "revenuecat": {
         "ios": "appl_REPLACE_ME",
         "android": "goog_REPLACE_ME"
