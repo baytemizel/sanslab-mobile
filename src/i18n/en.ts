@@ -192,6 +192,7 @@ export default {
     or: "or",
     google: "Continue with Google",
     apple: "Continue with Apple",
+    facebook: "Continue with Facebook",
     noAccount: "No account yet?",
     haveAccount: "Already have an account?",
     continueAsGuest: "Continue as guest",
@@ -208,6 +209,8 @@ export default {
       network: "Connection problem. Check your internet.",
       cancelled: "Cancelled.",
       "requires-recent-login": "For security, please sign in again.",
+      "account-exists":
+        "This email is registered with another sign-in method. Please continue with that one.",
       unavailable: "This feature is currently unavailable.",
       unknown: "Something went wrong. Please try again.",
       terms: "You need to accept the terms to continue.",
@@ -245,9 +248,6 @@ export default {
     version: "Version",
     restore: "Restore purchases",
     restoring: "Restoring…",
-    showOnboarding: "Show the intro again",
-    adPrefs: "My ad preferences",
-    adPrefsUnavailable: "Ad preferences are not available in your region.",
   },
   disclaimer: {
     short:

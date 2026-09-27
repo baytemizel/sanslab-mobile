@@ -61,7 +61,7 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_CLIENT_ID"
+          "iosUrlScheme": "com.googleusercontent.apps.256609557198-06jleqrksvhv92q2gm3vasepjaeb1uso"
         }
       ],
       [
@@ -94,7 +94,9 @@
         "interstitialIos": "ca-app-pub-XXXX/XXXX"
       },
       "auth": {
-        "googleWebClientId": "REPLACE_WITH_GOOGLE_WEB_CLIENT_ID"
+        "googleWebClientId": "256609557198-q0kgkm2bus1okesl2ld24adp96vkemnb.apps.googleusercontent.com",
+        "facebookAppId": "REPLACE_WITH_FACEBOOK_APP_ID",
+        "facebookClientToken": "REPLACE_WITH_FACEBOOK_CLIENT_TOKEN"
       },
       "links": {
         "privacy": "https://odit.com.tr/sanslab/privacy",

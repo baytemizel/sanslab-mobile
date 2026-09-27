@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  Stack,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -42,21 +47,33 @@ function RootNavigator({ onReady }: { onReady: () => void }) {
   const { theme, onboarded, hydrated } = useApp();
   const segments = useSegments();
   const router = useRouter();
+  const navReady = Boolean(useRootNavigationState()?.key);
 
-  // Onboarding kapısı. Auth kapısı YOKTUR — giriş tamamen opsiyoneldir.
+  /**
+   * İlk açılış akışı: onboarding → giriş ekranı (opsiyonel, misafir geçilebilir).
+   * Akış bitene kadar yalnızca bu iki bölüme izin verilir; `onboarded` giriş
+   * adımı geçilince yazılır, sonraki açılışlarda ikisi de gösterilmez.
+   */
+  const inIntro = segments[0] === "onboarding" || segments[0] === "(auth)";
+  const routeOk = onboarded ? segments[0] !== "onboarding" : inIntro;
+
+  useEffect(() => {
+    // Navigator hazır olmadan yönlendirme fırlatır; hazır olunca tekrar çalışır.
+    if (!hydrated || !navReady || routeOk) return;
+    router.replace(onboarded ? "/" : "/onboarding");
+  }, [hydrated, navReady, routeOk, onboarded, router]);
+
+  // Splash, kullanıcı doğru ekrana varınca kapanır: ana sayfa bir kare bile
+  // görünüp onboarding'e zıplamaz. Yönlendirme takılırsa yine de kapanır.
   useEffect(() => {
     if (!hydrated) return;
-    const inOnboarding = segments[0] === "onboarding";
-    if (!onboarded && !inOnboarding) {
-      router.replace("/onboarding");
-    } else if (onboarded && inOnboarding) {
-      router.replace("/");
+    if (routeOk) {
+      onReady();
+      return;
     }
-  }, [hydrated, onboarded, segments, router]);
-
-  useEffect(() => {
-    if (hydrated) onReady();
-  }, [hydrated, onReady]);
+    const fallback = setTimeout(onReady, 1500);
+    return () => clearTimeout(fallback);
+  }, [hydrated, routeOk, onReady]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>

@@ -44,6 +44,14 @@ const FIREBASE_PLUGINS = [
 const pluginName = (p: unknown): string =>
   Array.isArray(p) ? String(p[0]) : String(p);
 
+/** src/services/env.ts'deki placeholder kuralının derleme zamanı kopyası. */
+const realValue = (v: unknown): string | undefined =>
+  typeof v === "string" &&
+  v.trim().length > 0 &&
+  !/REPLACE|PLACEHOLDER|XXX|_ME/i.test(v)
+    ? v
+    : undefined;
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const base = config as ExpoConfig;
   const appPackage = base.android?.package;
@@ -64,6 +72,36 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const plugins = (base.plugins ?? []).filter(
     (p) => hasFirebase || !FIREBASE_PLUGINS.includes(pluginName(p))
   );
+
+  /**
+   * Facebook eklentisi App ID + client token olmadan boş manifest/Info.plist
+   * değerleri yazar ve SDK açılışta hata verir. Bu yüzden yalnızca ikisi de
+   * gerçekse eklenir; aksi halde Facebook butonu "kullanılamıyor" der.
+   */
+  const env = process.env;
+  const baseAuth = (base.extra as any)?.auth ?? {};
+  const facebookAppId = realValue(env.FACEBOOK_APP_ID ?? baseAuth.facebookAppId);
+  const facebookClientToken = realValue(
+    env.FACEBOOK_CLIENT_TOKEN ?? baseAuth.facebookClientToken
+  );
+  const hasFacebook = Boolean(facebookAppId && facebookClientToken);
+  if (hasFacebook) {
+    plugins.push([
+      "react-native-fbsdk-next",
+      {
+        appID: facebookAppId,
+        clientToken: facebookClientToken,
+        displayName: base.name,
+        scheme: `fb${facebookAppId}`,
+        // Gizlilik: SDK açılışta başlamaz, olay/reklam kimliği toplamaz.
+        isAutoInitEnabled: false,
+        autoLogAppEventsEnabled: false,
+        advertiserIDCollectionEnabled: false,
+        // ATT metni zaten google-mobile-ads eklentisinde tanımlı.
+        iosUserTrackingPermission: false,
+      },
+    ]);
+  }
 
   if (fileExists && !packageMatches) {
     console.warn(
@@ -91,8 +129,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         `(bkz. HANDOFF.md §5).`
     );
   }
-
-  const env = process.env;
 
   return {
     ...base,
@@ -132,6 +168,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         googleWebClientId:
           env.GOOGLE_WEB_CLIENT_ID ??
           (base.extra as any)?.auth?.googleWebClientId,
+        // Eklenti devrede değilse JS tarafı Facebook'u yapılandırılmamış görür.
+        facebookAppId: hasFacebook ? facebookAppId : undefined,
       },
     },
   };

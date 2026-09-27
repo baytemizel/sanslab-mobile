@@ -35,6 +35,7 @@ export type AuthErrorCode =
   | "network"
   | "cancelled"
   | "requires-recent-login"
+  | "account-exists"
   | "unavailable"
   | "unknown";
 
@@ -80,6 +81,11 @@ export function isGoogleAuthAvailable(): boolean {
   return isAuthAvailable() && Boolean(authConfig.googleWebClientId);
 }
 
+/** Facebook ile giriş bu derlemede yapılandırıldı mı (App ID + client token)? */
+export function isFacebookAuthAvailable(): boolean {
+  return isAuthAvailable() && Boolean(authConfig.facebookAppId);
+}
+
 /** Apple ile giriş yalnızca iOS'ta ve Firebase varken. */
 export function isAppleAuthAvailable(): boolean {
   return isAuthAvailable() && Platform.OS === "ios";
@@ -110,6 +116,9 @@ export function mapAuthError(e: any): AuthErrorCode {
   if (code.includes("too-many-requests")) return "too-many-requests";
   if (code.includes("network")) return "network";
   if (code.includes("requires-recent-login")) return "requires-recent-login";
+  // Aynı e-posta başka bir sağlayıcıyla (ör. Google) zaten kayıtlı.
+  if (code.includes("account-exists-with-different-credential"))
+    return "account-exists";
   if (code === "SIGN_IN_CANCELLED" || e?.code === "ERR_REQUEST_CANCELED")
     return "cancelled";
   return "unknown";
@@ -228,6 +237,8 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     const cred = await api.signInWithCredential(api.getAuth(), credential);
     return { user: toAuthUser(cred.user) };
   } catch (e) {
+    // DEVELOPER_ERROR (10) → Firebase'de bu imzanın SHA-1'i kayıtlı değil.
+    if (__DEV__) console.warn("[auth] Google girişi başarısız:", e);
     return { user: null, error: mapAuthError(e) };
   }
 }
@@ -269,6 +280,66 @@ export async function signInWithApple(): Promise<AuthResult> {
   }
 }
 
+/* ---------------------------- Facebook ---------------------------- */
+
+export async function signInWithFacebook(): Promise<AuthResult> {
+  const api = authApi();
+  if (!api) return { user: null, error: "unavailable" };
+  if (!authConfig.facebookAppId) return { user: null, error: "unavailable" };
+
+  try {
+    const {
+      AccessToken,
+      AuthenticationToken,
+      LoginManager,
+      Settings,
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+    } = require("react-native-fbsdk-next");
+    // Otomatik başlatma kapalı (gizlilik): SDK yalnızca kullanıcı Facebook'a
+    // dokununca başlar.
+    Settings.initializeSDK();
+
+    const permissions = ["public_profile", "email"];
+    let credential: any;
+
+    if (Platform.OS === "ios") {
+      // iOS: izleme izni olmadan Facebook "Limited Login" döner; Firebase bunu
+      // OIDC token + nonce ile doğrular.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Crypto = require("expo-crypto");
+      const nonce = Crypto.randomUUID();
+      const nonceSha256 = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        nonce
+      );
+      const result = await LoginManager.logInWithPermissions(
+        permissions,
+        "limited",
+        nonceSha256
+      );
+      if (result.isCancelled) return { user: null, error: "cancelled" };
+      const token = await AuthenticationToken.getAuthenticationTokenIOS();
+      if (!token?.authenticationToken) return { user: null, error: "cancelled" };
+      credential = api.FacebookAuthProvider.credential(
+        token.authenticationToken,
+        nonce
+      );
+    } else {
+      const result = await LoginManager.logInWithPermissions(permissions);
+      if (result.isCancelled) return { user: null, error: "cancelled" };
+      const token = await AccessToken.getCurrentAccessToken();
+      if (!token?.accessToken) return { user: null, error: "cancelled" };
+      credential = api.FacebookAuthProvider.credential(token.accessToken);
+    }
+
+    const cred = await api.signInWithCredential(api.getAuth(), credential);
+    return { user: toAuthUser(cred.user) };
+  } catch (e) {
+    if (__DEV__) console.warn("[auth] Facebook girişi başarısız:", e);
+    return { user: null, error: mapAuthError(e) };
+  }
+}
+
 /* ---------------------------- Oturum ---------------------------- */
 
 export async function signOut(): Promise<void> {
@@ -285,6 +356,15 @@ export async function signOut(): Promise<void> {
     await GoogleSignin.signOut();
   } catch {
     /* Google oturumu yoksa sorun değil */
+  }
+  if (authConfig.facebookAppId) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { LoginManager } = require("react-native-fbsdk-next");
+      LoginManager.logOut();
+    } catch {
+      /* Facebook oturumu yoksa sorun değil */
+    }
   }
 }
 

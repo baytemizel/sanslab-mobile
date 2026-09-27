@@ -28,6 +28,7 @@ jest.mock("expo-router", () => ({
 }));
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 import {
   act,
@@ -49,6 +50,8 @@ import SignIn from "../(auth)/sign-in";
 import SignUp from "../(auth)/sign-up";
 import ForgotPassword from "../(auth)/forgot-password";
 import { GAMES } from "../../src/games/config";
+import { ONBOARDING_KEY } from "../../src/state/AppContext";
+import * as auth from "../../src/services/auth";
 import tr from "../../src/i18n/tr";
 
 beforeAll(async () => {
@@ -101,21 +104,28 @@ describe("Ana ekran", () => {
 
 describe("Oyun ekranı", () => {
   it("kupon üretir ve sonucu gösterir", async () => {
-    mockParams = { id: "sayisal" };
-    renderWithProviders(<GameScreen />);
-    await settle();
+    // Kuponlar ikon dönüşü bitince gelir; gerçek zamana bağlı kalmamak için
+    // sahte zamanlayıcıyla ilerletilir (soğuk jest'te ilk render >1 sn sürebilir).
+    jest.useFakeTimers();
+    try {
+      mockParams = { id: "sayisal" };
+      renderWithProviders(<GameScreen />);
+      await settle();
 
-    expect(screen.getByText(tr.generator.empty)).toBeTruthy();
+      expect(screen.getByText(tr.generator.empty)).toBeTruthy();
 
-    fireEvent.press(screen.getByText(tr.common.generate));
-    await settle();
+      fireEvent.press(screen.getByText(tr.common.generate));
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
 
-    await waitFor(() => {
       expect(screen.queryByText(tr.generator.empty)).toBeNull();
-    });
-    // Kupon kaydedildi bilgisi ve "tekrar üret" etiketi belirir.
-    expect(screen.getByText(tr.common.regenerate)).toBeTruthy();
-    expect(screen.getByText(tr.history.savedHint)).toBeTruthy();
+      // Kupon kaydedildi bilgisi ve "tekrar üret" etiketi belirir.
+      expect(screen.getByText(tr.common.regenerate)).toBeTruthy();
+      expect(screen.getByText(tr.history.savedHint)).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("üretim sürerken buton disabled olur, kuponlar dönüş bitince gelir", async () => {
@@ -212,7 +222,7 @@ describe("Onboarding", () => {
     expect(screen.getByText(tr.onboarding.accept)).toBeTruthy();
   });
 
-  it("kabul edilince ana ekrana yönlendirir", async () => {
+  it("giriş yoksa kabul edilince akışı bitirir ve ana ekrana yönlendirir", async () => {
     renderWithProviders(<Onboarding />);
     await settle();
 
@@ -222,6 +232,25 @@ describe("Onboarding", () => {
     await settle();
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
+  });
+
+  it("giriş varsa kabul edilince giriş ekranına geçer, akış henüz bitmez", async () => {
+    const spy = jest.spyOn(auth, "isAuthAvailable").mockReturnValue(true);
+    try {
+      renderWithProviders(<Onboarding />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.onboarding.skip));
+      await settle();
+      fireEvent.press(screen.getByText(tr.onboarding.accept));
+      await settle();
+
+      expect(mockReplace).toHaveBeenCalledWith("/(auth)/sign-in");
+      expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
@@ -271,7 +300,14 @@ describe("Ayarlar", () => {
     expect(screen.getByText(tr.settings.privacy)).toBeTruthy();
     expect(screen.getByText(tr.settings.terms)).toBeTruthy();
     expect(screen.getByText(tr.settings.responsible)).toBeTruthy();
-    expect(screen.getByText(tr.settings.showOnboarding)).toBeTruthy();
+  });
+
+  it("tanıtımı tekrar göster ve reklam tercihleri satırlarını içermez", async () => {
+    renderWithProviders(<Settings />);
+    await settle();
+
+    expect(screen.queryByText("Tanıtımı tekrar göster")).toBeNull();
+    expect(screen.queryByText("Reklam tercihlerim")).toBeNull();
   });
 
   it("sorumlu oyun metnini açar", async () => {
@@ -292,6 +328,8 @@ describe("Hesap / giriş — auth yapılandırılmamış derleme", () => {
   });
 
   it("giriş ekranı kullanıcıyı kilitlemez, misafir çıkışı sunar", async () => {
+    // Ayarlar'dan açılmış gibi: ilk açılış akışı çoktan tamamlanmış.
+    await AsyncStorage.setItem(ONBOARDING_KEY, "1");
     renderWithProviders(<SignIn />);
     await settle();
 
@@ -328,5 +366,70 @@ describe("Hesap / giriş — auth yapılandırılmamış derleme", () => {
     await waitFor(() =>
       expect(screen.getByText(tr.auth.error.unavailable)).toBeTruthy()
     );
+  });
+});
+
+describe("Giriş ekranı — auth yapılandırılmış derleme", () => {
+  beforeEach(() => {
+    jest.spyOn(auth, "isAuthAvailable").mockReturnValue(true);
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("iOS'ta Apple, Google, Facebook butonları sunar; e-posta/şifre yoktur", async () => {
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    const labels = [tr.auth.apple, tr.auth.google, tr.auth.facebook];
+    labels.forEach((l) => expect(screen.getByText(l)).toBeTruthy());
+    expect(screen.queryByText(tr.auth.email)).toBeNull();
+    expect(screen.queryByText(tr.auth.password)).toBeNull();
+    expect(screen.getByText(tr.auth.continueAsGuest)).toBeTruthy();
+  });
+
+  it("Android'de yalnızca Google ve Facebook butonları sunar", async () => {
+    jest.replaceProperty(Platform, "OS", "android");
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    expect(screen.queryByText(tr.auth.apple)).toBeNull();
+    expect(screen.getByText(tr.auth.google)).toBeTruthy();
+    expect(screen.getByText(tr.auth.facebook)).toBeTruthy();
+  });
+
+  it("yapılandırılmamış sağlayıcıya dokununca 'kullanılamıyor' der, çökmez", async () => {
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    fireEvent.press(screen.getByText(tr.auth.facebook));
+    await waitFor(() =>
+      expect(screen.getByText(tr.auth.error.unavailable)).toBeTruthy()
+    );
+  });
+});
+
+describe("İlk açılış akışı — giriş adımı", () => {
+  it("misafir devam edince akış tamamlanır ve ana ekrana geçilir", async () => {
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    fireEvent.press(screen.getByText(tr.auth.continueAsGuest));
+    await settle();
+
+    expect(mockReplace).toHaveBeenCalledWith("/");
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
+  });
+
+  it("kapat (X) da akışı tamamlar", async () => {
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    fireEvent.press(screen.getByLabelText(tr.common.close));
+    await settle();
+
+    expect(mockReplace).toHaveBeenCalledWith("/");
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
   });
 });

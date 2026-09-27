@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  Modal,
   Linking,
   Platform,
   ToastAndroid,
@@ -16,11 +15,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { Segmented, PrimaryButton } from "../src/components/Buttons";
+import BottomSheet from "../src/components/BottomSheet";
 import { useApp } from "../src/state/AppContext";
 import type { Lang } from "../src/i18n";
 import { hasPremium, restore } from "../src/services/revenuecat";
 import { isAuthAvailable } from "../src/services/auth";
-import { showPrivacyOptions } from "../src/services/consent";
 import { appVersion, links } from "../src/services/env";
 import { fonts } from "../src/theme/colors";
 
@@ -37,7 +36,6 @@ export default function Settings() {
     refreshPremium,
     isPremium,
     user,
-    resetOnboarding,
     history,
   } = useApp();
   const router = useRouter();
@@ -61,16 +59,6 @@ export default function Settings() {
       toast(t("premium.restoreNone"));
     }
   }, [refreshPremium, toast, t]);
-
-  const doShowOnboarding = useCallback(async () => {
-    await resetOnboarding();
-    router.replace("/onboarding");
-  }, [resetOnboarding, router]);
-
-  const doAdPreferences = useCallback(async () => {
-    const shown = await showPrivacyOptions();
-    if (!shown) toast(t("settings.adPrefsUnavailable"));
-  }, [toast, t]);
 
   const Row = ({
     icon,
@@ -199,18 +187,6 @@ export default function Settings() {
           onPress={() => setResponsibleOpen(true)}
         />
         <Row
-          icon="compass"
-          label={t("settings.showOnboarding")}
-          onPress={doShowOnboarding}
-        />
-        {!isPremium && (
-          <Row
-            icon="sliders"
-            label={t("settings.adPrefs")}
-            onPress={doAdPreferences}
-          />
-        )}
-        <Row
           icon="lock"
           label={t("settings.privacy")}
           onPress={() => Linking.openURL(links.privacy)}
@@ -243,31 +219,25 @@ export default function Settings() {
         />
       </View>
 
-      <Modal visible={responsibleOpen} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View
-            style={[
-              styles.modalCard,
-              { backgroundColor: theme.cardSolid, borderColor: theme.border },
-            ]}
-          >
-            <View style={[styles.modalIcon, { backgroundColor: theme.goldFill }]}>
-              <Feather name="shield" size={24} color={theme.onGold} />
-            </View>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {t("disclaimer.responsibleTitle")}
-            </Text>
-            <Text style={[styles.modalBody, { color: theme.subText }]}>
-              {t("disclaimer.responsibleBody")}
-            </Text>
-            <PrimaryButton
-              label={t("common.close")}
-              onPress={() => setResponsibleOpen(false)}
-              variant="gold"
-            />
-          </View>
+      <BottomSheet
+        visible={responsibleOpen}
+        onClose={() => setResponsibleOpen(false)}
+      >
+        <View style={[styles.modalIcon, { backgroundColor: theme.goldFill }]}>
+          <Feather name="shield" size={24} color={theme.onGold} />
         </View>
-      </Modal>
+        <Text style={[styles.modalTitle, { color: theme.text }]}>
+          {t("disclaimer.responsibleTitle")}
+        </Text>
+        <Text style={[styles.modalBody, { color: theme.subText }]}>
+          {t("disclaimer.responsibleBody")}
+        </Text>
+        <PrimaryButton
+          label={t("common.close")}
+          onPress={() => setResponsibleOpen(false)}
+          variant="gold"
+        />
+      </BottomSheet>
     </ScrollView>
   );
 }
@@ -299,18 +269,6 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 15, fontFamily: fonts.bodyMed, fontWeight: "600" },
   rowValue: { fontSize: 13.5, fontFamily: fonts.body },
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(5,4,15,0.7)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    padding: 26,
-    paddingBottom: 44,
-  },
   modalIcon: {
     width: 52,
     height: 52,

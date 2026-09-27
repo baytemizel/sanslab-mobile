@@ -31,7 +31,8 @@ eksik gizli dosyaları algılar ve ilgili eklentileri devre dışı bırakır:
 | `google-services.json` | Firebase eklentileri (Analytics/Crashlytics/**Auth**) kapanır; giriş ekranı "bu derlemede kullanılamıyor" der, uygulama misafir modunda tam çalışır |
 | RevenueCat anahtarı | Satın alma kapanır, paywall bilgi mesajı gösterir, herkes free katmandadır |
 | AdMob birim kimlikleri | Google **TestIds** kullanılır (kendi reklamına tıklama riski yok) |
-| `GOOGLE_WEB_CLIENT_ID` | "Google ile devam et" butonu gizlenir |
+| `GOOGLE_WEB_CLIENT_ID` | Yayın derlemesinde "Google ile devam et" gizlenir (geliştirmede görünür, dokununca "kullanılamıyor" der) |
+| `FACEBOOK_APP_ID` + `FACEBOOK_CLIENT_TOKEN` | Facebook eklentisi prebuild'e eklenmez; buton Google'daki gibi davranır |
 
 ```bash
 npx expo prebuild -p android --clean
@@ -76,10 +77,10 @@ dosyası değişirse:
 rm -rf android && npx expo prebuild -p android --clean
 ```
 
-### iOS için kalan adım
-Firebase Console'da **iOS** uygulaması da `com.oditteknoloji.sanslab` paket
-kimliğiyle eklenmeli ve `GoogleService-Info.plist` proje köküne konmalıdır
-(şu an yalnızca Android dosyası mevcut).
+### iOS
+Firebase Console'da **iOS** uygulaması `com.oditteknoloji.sanslab` kimliğiyle
+eklendi ✅; `GoogleService-Info.plist` proje kökünde (git dışı). Her iki
+platformun Firebase dosyası da mevcut.
 
 ---
 
@@ -91,15 +92,17 @@ kimliğiyle eklenmeli ve `GoogleService-Info.plist` proje köküne konmalıdır
 | `eas.projectId` | `93ce342c-…-e0783dcc9e96` ✅ | Ayarlandı — dokunmayın |
 | `revenuecat.ios` / `.android` | `*_REPLACE_ME` | RevenueCat public SDK key'leri |
 | `admob.*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
-| `auth.googleWebClientId` | `REPLACE_WITH_...` | Firebase Auth → Google → Web client ID |
+| `auth.googleWebClientId` | `256609557198-q0kg…apps.googleusercontent.com` ✅ | Ayarlandı — Android'de çalışması için Firebase'e SHA-1 parmak izleri eklenmeli |
+| `auth.facebookAppId` / `.facebookClientToken` | `REPLACE_WITH_...` | Meta for Developers → App ID ve Client token (bkz. §5) |
 
 Hepsi `.env` ile de geçilebilir — bkz. `.env.example`.
 
 ### `app.json → plugins`
 - `react-native-google-mobile-ads.androidAppId/iosAppId`: şu an Google'ın
   **test App ID**'leri. Yayın öncesi kendi AdMob App ID'lerinle değiştir.
-- `@react-native-google-signin/google-signin.iosUrlScheme`: iOS için
-  `GoogleService-Info.plist` içindeki `REVERSED_CLIENT_ID`.
+- `@react-native-google-signin/google-signin.iosUrlScheme`: ✅ ayarlandı —
+  `GoogleService-Info.plist` içindeki `REVERSED_CLIENT_ID` ile aynı olmalı
+  (plist yeniden indirilirse kontrol et).
 
 ### Mağaza/iletişim bağlantıları
 `app.json → extra.links` altında; kodda hard-code YOK.
@@ -116,9 +119,21 @@ erişilemezse gönderim reddedilir.
 2. `GoogleService-Info.plist` ve `google-services.json` dosyalarını **proje
    köküne** koy. `app.config.ts` varlıklarını algılayıp eklentileri kendisi
    ekler — `app.json`'a elle referans YAZMA.
-3. Authentication → Sign-in method: **E-posta/Şifre**, **Google**,
-   (iOS için) **Apple** sağlayıcılarını aç.
-4. Analytics ve Crashlytics'i etkinleştir.
+3. Authentication → Sign-in method: **Google**, **Facebook** ve (iOS için)
+   **Apple** sağlayıcılarını aç. Giriş ekranında e-posta/şifre yoktur:
+   Android'de Google + Facebook, iOS'ta Apple + Google + Facebook.
+4. **Facebook** için ([developers.facebook.com](https://developers.facebook.com)):
+   - Uygulama oluştur, "Facebook Login" ürününü ekle.
+   - App ID + App Secret'ı Firebase → Facebook sağlayıcısına gir; Firebase'in
+     verdiği OAuth redirect URI'yi Facebook Login → Ayarlar'a ekle.
+   - Android platformu: paket `com.oditteknoloji.sanslab`, sınıf
+     `com.oditteknoloji.sanslab.MainActivity`, debug + release **key hash**'leri.
+   - iOS platformu: bundle ID `com.oditteknoloji.sanslab`.
+   - App ID ve Client token'ı (Ayarlar → Gelişmiş) `.env`'e yaz, ardından
+     `npx expo prebuild --clean` + yeniden derle (native SDK eklenir).
+   - iOS'ta izleme izni olmadan "Limited Login" kullanılır; Firebase bunu
+     nonce ile doğrular, ek ayar gerekmez.
+5. Analytics ve Crashlytics'i etkinleştir.
 
 > Bu dosyalar gizlidir; `.gitignore` zaten hariç tutar.
 
@@ -155,7 +170,11 @@ Davranış (`src/services/ads.ts`, `src/services/consent.ts`):
 - Banner free kullanıcıda oyun ekranının altında.
 - Interstitial her **4.** üretimde ve iki gösterim arasında **en az 90 sn**.
 - Premium'da tüm reklamlar kapalı; satın alma anında `teardownAds()` çalışır.
-- Ayarlar → "Reklam tercihlerim" ile kullanıcı rızasını değiştirebilir.
+- ⚠️ Ayarlar'daki "Reklam tercihlerim" satırı ürün kararıyla **kaldırıldı**.
+  AB/UK/CH kullanıcıları için Google, rızanın sonradan değiştirilebileceği bir
+  giriş noktası ister (UMP `privacyOptionsRequirementStatus === REQUIRED`).
+  AEA'da yayın yapılacaksa satırı yalnızca bu durumda gösterecek şekilde geri
+  ekle — `showPrivacyOptions()` (`src/services/consent.ts`) hazır duruyor.
 
 ---
 

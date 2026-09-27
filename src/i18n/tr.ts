@@ -193,6 +193,7 @@ export default {
     or: "veya",
     google: "Google ile devam et",
     apple: "Apple ile devam et",
+    facebook: "Facebook ile devam et",
     noAccount: "Hesabın yok mu?",
     haveAccount: "Zaten hesabın var mı?",
     continueAsGuest: "Misafir olarak devam et",
@@ -209,6 +210,8 @@ export default {
       network: "Bağlantı hatası. İnternetini kontrol et.",
       cancelled: "İşlem iptal edildi.",
       "requires-recent-login": "Güvenlik için yeniden giriş yapman gerekiyor.",
+      "account-exists":
+        "Bu e-posta başka bir giriş yöntemiyle kayıtlı. Lütfen o yöntemle devam et.",
       unavailable: "Bu özellik şu anda kullanılamıyor.",
       unknown: "Bir şeyler ters gitti. Lütfen tekrar dene.",
       terms: "Devam etmek için koşulları kabul etmelisin.",
@@ -247,9 +250,6 @@ export default {
     version: "Sürüm",
     restore: "Satın Alımları Geri Yükle",
     restoring: "Geri yükleniyor…",
-    showOnboarding: "Tanıtımı tekrar göster",
-    adPrefs: "Reklam tercihlerim",
-    adPrefsUnavailable: "Reklam tercihleri bu bölgede kullanılamıyor.",
   },
   disclaimer: {
     short:

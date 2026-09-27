@@ -46,6 +46,8 @@ export const admobUnits = {
 
 export const authConfig = {
   googleWebClientId: realValue(extra.auth?.googleWebClientId),
+  /** app.config.ts yalnızca Facebook eklentisi devredeyken doldurur. */
+  facebookAppId: realValue(extra.auth?.facebookAppId),
 };
 
 /** app.config.ts, Firebase servis dosyası bulunca `true` yazar. */

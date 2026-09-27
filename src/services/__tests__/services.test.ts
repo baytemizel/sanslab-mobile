@@ -24,12 +24,14 @@ import {
   deleteAccount,
   isAppleAuthAvailable,
   isAuthAvailable,
+  isFacebookAuthAvailable,
   isGoogleAuthAvailable,
   mapAuthError,
   observeUser,
   sendPasswordReset,
   signInWithApple,
   signInWithEmail,
+  signInWithFacebook,
   signInWithGoogle,
   signOut,
   signUpWithEmail,
@@ -109,6 +111,7 @@ describe("Auth — Firebase yapılandırılmamış derleme", () => {
   it("kullanılamaz olarak raporlanır", () => {
     expect(isAuthAvailable()).toBe(false);
     expect(isGoogleAuthAvailable()).toBe(false);
+    expect(isFacebookAuthAvailable()).toBe(false);
     expect(isAppleAuthAvailable()).toBe(false);
     expect(currentUser()).toBeNull();
   });
@@ -133,6 +136,10 @@ describe("Auth — Firebase yapılandırılmamış derleme", () => {
       user: null,
       error: "unavailable",
     });
+    await expect(signInWithFacebook()).resolves.toEqual({
+      user: null,
+      error: "unavailable",
+    });
     await expect(sendPasswordReset("a@b.co")).resolves.toBe("unavailable");
     await expect(deleteAccount()).resolves.toBe("unavailable");
     await expect(signOut()).resolves.toBeUndefined();
@@ -148,6 +155,9 @@ describe("Auth — Firebase yapılandırılmamış derleme", () => {
   it("Firebase hata kodlarını kullanıcı mesajı anahtarına eşler", () => {
     expect(mapAuthError({ code: "auth/invalid-email" })).toBe("invalid-email");
     expect(mapAuthError({ code: "auth/user-not-found" })).toBe("user-not-found");
+    expect(
+      mapAuthError({ code: "auth/account-exists-with-different-credential" })
+    ).toBe("account-exists");
     expect(mapAuthError({ code: "auth/wrong-password" })).toBe("wrong-password");
     expect(mapAuthError({ code: "auth/invalid-credential" })).toBe("wrong-password");
     expect(mapAuthError({ code: "auth/email-already-in-use" })).toBe(

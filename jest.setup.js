@@ -154,6 +154,17 @@ jest.mock("@react-native-google-signin/google-signin", () => ({
   },
 }));
 
+/* --------------------------- Facebook SDK --------------------------- */
+jest.mock("react-native-fbsdk-next", () => ({
+  Settings: { initializeSDK: jest.fn() },
+  LoginManager: {
+    logInWithPermissions: jest.fn(async () => ({ isCancelled: true })),
+    logOut: jest.fn(),
+  },
+  AccessToken: { getCurrentAccessToken: jest.fn(async () => null) },
+  AuthenticationToken: { getAuthenticationTokenIOS: jest.fn(async () => null) },
+}));
+
 /* ------------------------ Google fonts (ağ yok) ------------------------ */
 jest.mock("@expo-google-fonts/sora", () => ({
   useFonts: () => [true, null],

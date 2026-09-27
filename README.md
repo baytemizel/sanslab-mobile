@@ -78,7 +78,8 @@ rozetiyle gösterilir.
 ### Hesap — **opsiyonel**
 
 Uygulamanın tamamı üyeliksiz çalışır. Giriş yalnızca Premium'u ve kupon
-geçmişini cihazlar arasında taşımak içindir (E-posta · Google · Apple).
+geçmişini cihazlar arasında taşımak içindir (Android: Google · Facebook,
+iOS: Apple · Google · Facebook — e-posta/şifre girişi yoktur).
 Firebase yapılandırılmamış bir derlemede giriş ekranı kendini kapatır ve
 uygulama misafir modunda tam çalışmaya devam eder. Mağaza zorunluluğu olan
 **uygulama içi hesap silme** akışı mevcuttur (Ayarlar → Hesap → Hesabımı sil).
@@ -121,13 +122,13 @@ SKOR(K) = 0.15·F + 0.10·R + 0.10·G + 0.10·P + 0.15·S + 0.10·B + 0.30·A
 app/                    Expo Router ekranları
 ├── _layout.tsx         Splash kontrolü · font/i18n yükleme · onboarding kapısı
 ├── index.tsx           Ana ekran (oyun listesi, premium şeridi, geçmiş girişi)
-├── onboarding.tsx      4 slaytlık ilk açılış + yasal beyan (tek seferlik)
+├── onboarding.tsx      4 slaytlık ilk açılış + yasal beyan → giriş ekranı (tek seferlik)
 ├── game/[id].tsx       Üretim ekranı (4 mod, tekli/10'lu, İstatistik girişi)
 ├── stats/[id].tsx      İstatistik paneli (frekans grafiği + adillik okuması)
 ├── history.tsx         Kupon geçmişi · favoriler · filtreler · dışa aktarma
 ├── paywall.tsx         RevenueCat paketleri / satın alma / geri yükleme
 ├── account.tsx         Profil · çıkış · uygulama içi HESAP SİLME (mağaza zorunluluğu)
-├── settings.tsx        Hesap · dil · tema · reklam tercihleri · yasal bağlantılar
+├── settings.tsx        Hesap · dil · tema · yasal bağlantılar
 └── (auth)/             OPSİYONEL giriş: sign-in · sign-up · forgot-password
 
 src/
@@ -159,7 +160,9 @@ scripts/                gen_assets.py · gen_mockups.py (marka görselleri üret
 **Açılış akışı** (`_layout.tsx`): native splash **elle** tutulur → fontlar +
 i18n + kalıcı durum yüklenir → splash kapanır. Reklam/satın alma/Firebase
 başlatmaları ilk kareyi bloklamaz (`Promise.allSettled`). İlk açılışta
-onboarding'e yönlendirilir; **auth kapısı yoktur.** Anahtar/native modül
+onboarding → giriş ekranı gösterilir; giriş opsiyoneldir (misafir geçilebilir)
+ve bu adım geçilince akış bir daha gösterilmez. Splash, kullanıcı doğru ekrana
+yönlendirildikten sonra kapanır. Anahtar/native modül
 eksikse servisler sessizce devre dışı kalır ve uygulama çalışmaya devam eder.
 
 ### Teknoloji
@@ -212,7 +215,8 @@ Hiçbiri zorunlu değildir; eksik olan SDK sessizce kapanır.
 | `eas.projectId` | — | EAS proje kimliği (ayarlı) |
 | `revenuecat.ios` / `.android` | `REVENUECAT_*_KEY` | Public SDK key'leri (`appl_…` / `goog_…`) |
 | `admob.*` | `ADMOB_*` | Banner/Interstitial birimleri (dev'de otomatik TestIds) |
-| `auth.googleWebClientId` | `GOOGLE_WEB_CLIENT_ID` | Boşsa "Google ile devam et" gizlenir |
+| `auth.googleWebClientId` | `GOOGLE_WEB_CLIENT_ID` | Boşsa yayın derlemesinde "Google ile devam et" gizlenir |
+| `auth.facebookAppId` / `.facebookClientToken` | `FACEBOOK_APP_ID` / `FACEBOOK_CLIENT_TOKEN` | İkisi de yoksa Facebook eklentisi eklenmez, buton yayında gizlenir |
 | `links.*` | — | Gizlilik / koşullar / destek adresleri |
 
 Firebase: `google-services.json` (Android) ve/veya `GoogleService-Info.plist`
@@ -227,12 +231,13 @@ yazmayın. Ayrıntılı adım adım: [`HANDOFF.md`](HANDOFF.md).
 Lansman kontrol listesi (ayrıntılar `HANDOFF.md`):
 
 - [x] Uygulama kimliği: **`com.oditteknoloji.sanslab`** (Android + iOS, `google-services.json` ile eşleşiyor — ilk yayından sonra değiştirilemez)
-- [ ] Firebase'e **iOS** uygulaması ekle + `GoogleService-Info.plist`
+- [x] Firebase'e **iOS** uygulaması eklendi + `GoogleService-Info.plist` (proje kökünde, git dışı)
 - [x] EAS `projectId`: `93ce342c-547b-4e32-bae1-e0783dcc9e96`
 - [ ] RevenueCat: entitlement `premium`, offering `default`, Aylık/Yıllık/Ömür Boyu ürünleri mağazalarda tanımlı
 - [ ] AdMob gerçek birim kimlikleri + plugin App ID'leri
 - [ ] AdMob **Privacy & messaging → GDPR mesajı** oluşturuldu (AEA/UK/CH zorunlu)
-- [ ] Firebase yapılandırma dosyaları + Auth sağlayıcıları (E-posta · Google · Apple) açık
+- [ ] Firebase yapılandırma dosyaları + Auth sağlayıcıları (Google · Facebook · Apple) açık
+- [ ] Facebook uygulaması: App ID + Client token, key hash'ler, Firebase redirect URI (HANDOFF §5)
 - [ ] Gizlilik & Koşullar URL'leri yayında (repo: [`store/privacy-policy.md`](store/privacy-policy.md), [`store/terms.md`](store/terms.md))
 - [ ] Play **Data safety** formu: AD_ID · Analytics · Crashlytics · (hesap varsa) e-posta & ad
 - [ ] Play **hesap silme** beyanı — uygulama içi akış mevcut (Ayarlar → Hesap)

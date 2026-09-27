@@ -97,6 +97,7 @@ describe("i18n", () => {
       "network",
       "cancelled",
       "requires-recent-login",
+      "account-exists",
       "unavailable",
       "unknown",
       "terms",

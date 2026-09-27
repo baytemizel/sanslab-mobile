@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import Ball from "../src/components/Ball";
 import { PrimaryButton } from "../src/components/Buttons";
 import { useApp } from "../src/state/AppContext";
+import { isAuthAvailable } from "../src/services/auth";
 import { logEvent } from "../src/services/firebase";
 import { fonts, gameColors } from "../src/theme/colors";
 
@@ -94,6 +95,12 @@ export default function Onboarding() {
 
   const finish = useCallback(async () => {
     logEvent("onboarding_complete", { slides: SLIDES.length });
+    // Akışın son adımı giriş ekranı; akışı orada "geçildi" olarak işaretleriz.
+    // Bu derlemede giriş yoksa adımı atlayıp doğrudan ana ekrana geçeriz.
+    if (isAuthAvailable()) {
+      router.replace("/(auth)/sign-in");
+      return;
+    }
     await completeOnboarding();
     router.replace("/");
   }, [completeOnboarding, router]);

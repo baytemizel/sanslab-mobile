@@ -60,7 +60,6 @@ interface AppState {
   /* onboarding */
   onboarded: boolean;
   completeOnboarding: () => Promise<void>;
-  resetOnboarding: () => Promise<void>;
 
   /* geçmiş & favoriler (Faz 3) */
   history: SavedCoupon[];
@@ -187,11 +186,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(ONBOARDING_KEY, "1").catch(() => {});
   }, []);
 
-  const resetOnboarding = useCallback(async () => {
-    setOnboarded(false);
-    await AsyncStorage.removeItem(ONBOARDING_KEY).catch(() => {});
-  }, []);
-
   const recordCoupons = useCallback((coupons: Coupon[]) => {
     const next = addToHistory(historyRef.current, coupons, {
       isPremium: premiumRef.current,
@@ -251,7 +245,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isSignedIn: Boolean(user),
       onboarded,
       completeOnboarding,
-      resetOnboarding,
       history,
       favoriteCount,
       recordCoupons,
@@ -271,7 +264,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       user,
       onboarded,
       completeOnboarding,
-      resetOnboarding,
       history,
       favoriteCount,
       recordCoupons,
