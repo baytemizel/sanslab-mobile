@@ -118,6 +118,28 @@ describe("Oyun ekranı", () => {
     expect(screen.getByText(tr.history.savedHint)).toBeTruthy();
   });
 
+  it("üretim sürerken buton disabled olur, kuponlar dönüş bitince gelir", async () => {
+    jest.useFakeTimers();
+    try {
+      mockParams = { id: "sayisal" };
+      renderWithProviders(<GameScreen />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.common.generate));
+      expect(screen.getByText(tr.common.generate)).toBeDisabled();
+      expect(screen.getByText(tr.generator.empty)).toBeTruthy();
+
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+
+      expect(screen.queryByText(tr.generator.empty)).toBeNull();
+      expect(screen.getByText(tr.common.regenerate)).toBeEnabled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("premium mod seçilince üretmez, paywall açar", async () => {
     mockParams = { id: "sayisal" };
     renderWithProviders(<GameScreen />);
@@ -130,6 +152,15 @@ describe("Oyun ekranı", () => {
     expect(mockPush).toHaveBeenCalledWith("/paywall");
     // Kupon üretilmemiş olmalı.
     expect(screen.getByText(tr.generator.empty)).toBeTruthy();
+  });
+
+  it("kayan header'daki geri butonu önceki ekrana döner", async () => {
+    mockParams = { id: "sayisal" };
+    renderWithProviders(<GameScreen />);
+    await settle();
+
+    fireEvent.press(screen.getByLabelText(tr.common.back));
+    expect(mockBack).toHaveBeenCalled();
   });
 
   it("bilinmeyen oyun id'sinde çökmez", async () => {

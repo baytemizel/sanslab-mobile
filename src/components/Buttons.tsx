@@ -85,11 +85,48 @@ interface SegProps<T extends string> {
   value: T;
   onChange: (v: T) => void;
   color?: string;
+  /** "chips": her seçenek ayrı kutu, aralarında boşluklu 2 sütunlu ızgara (uzun etiketler için). */
+  variant?: "segmented" | "chips";
 }
 
-export function Segmented<T extends string>({ options, value, onChange, color }: SegProps<T>) {
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  color,
+  variant = "segmented",
+}: SegProps<T>) {
   const { theme } = useApp();
   const active = color ?? theme.gold;
+  const activeBg = theme.dark ? "rgba(255,255,255,0.10)" : "#fff";
+
+  if (variant === "chips") {
+    return (
+      <View style={styles.chips}>
+        {options.map((o) => {
+          const on = o.value === value;
+          return (
+            <Pressable
+              key={o.value}
+              onPress={() => onChange(o.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: on ? activeBg : theme.card,
+                  borderColor: on ? active : theme.border,
+                },
+              ]}
+            >
+              <Text style={[styles.segLabel, { color: on ? active : theme.subText }]}>{o.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.seg, { backgroundColor: theme.card, borderColor: theme.border }]}>
       {options.map((o) => {
@@ -100,7 +137,7 @@ export function Segmented<T extends string>({ options, value, onChange, color }:
               <View
                 style={[
                   styles.segActive,
-                  { backgroundColor: theme.dark ? "rgba(255,255,255,0.10)" : "#fff", borderColor: active },
+                  { backgroundColor: activeBg, borderColor: active },
                 ]}
               />
             )}
@@ -146,7 +183,25 @@ const styles = StyleSheet.create({
     padding: 5,
     borderWidth: 1,
   },
-  segItem: { flex: 1, paddingVertical: 11, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  segItem: {
+    flex: 1,
+    paddingVertical: 11,
+    paddingHorizontal: 8,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   segActive: { ...StyleSheet.absoluteFillObject, borderRadius: radius.sm, borderWidth: 1 },
-  segLabel: { fontSize: 13.5, fontFamily: fonts.bodySemi, fontWeight: "700" },
+  segLabel: { fontSize: 13.5, fontFamily: fonts.bodySemi, fontWeight: "700", textAlign: "center" },
+  // 2 sütun: %48.5 + space-between ≈ 10px yatay boşluk; tek kalan öğe yarım genişlikte kalır.
+  chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 },
+  chip: {
+    width: "48.5%",
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
