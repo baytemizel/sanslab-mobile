@@ -51,6 +51,9 @@ import SignUp from "../(auth)/sign-up";
 import ForgotPassword from "../(auth)/forgot-password";
 import { GAMES } from "../../src/games/config";
 import { ONBOARDING_KEY } from "../../src/state/AppContext";
+
+/** jest.setup.js'teki sahte kurulum zamanı — bayrak bu değerle yazılır. */
+const INSTALL_STAMP = "1700000000000";
 import * as auth from "../../src/services/auth";
 import tr from "../../src/i18n/tr";
 
@@ -232,7 +235,7 @@ describe("Onboarding", () => {
     await settle();
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
-    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe(INSTALL_STAMP);
   });
 
   it("giriş varsa kabul edilince giriş ekranına geçer, akış henüz bitmez", async () => {
@@ -310,6 +313,15 @@ describe("Ayarlar", () => {
     expect(screen.queryByText("Reklam tercihlerim")).toBeNull();
   });
 
+  it("kayan header başlığı gösterir, geri butonu önceki ekrana döner", async () => {
+    renderWithProviders(<Settings />);
+    await settle();
+
+    expect(screen.getByText(tr.common.settings)).toBeTruthy();
+    fireEvent.press(screen.getByLabelText(tr.common.back));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it("sorumlu oyun metnini açar", async () => {
     renderWithProviders(<Settings />);
     await settle();
@@ -329,7 +341,7 @@ describe("Hesap / giriş — auth yapılandırılmamış derleme", () => {
 
   it("giriş ekranı kullanıcıyı kilitlemez, misafir çıkışı sunar", async () => {
     // Ayarlar'dan açılmış gibi: ilk açılış akışı çoktan tamamlanmış.
-    await AsyncStorage.setItem(ONBOARDING_KEY, "1");
+    await AsyncStorage.setItem(ONBOARDING_KEY, INSTALL_STAMP);
     renderWithProviders(<SignIn />);
     await settle();
 
@@ -419,7 +431,7 @@ describe("İlk açılış akışı — giriş adımı", () => {
 
     expect(mockReplace).toHaveBeenCalledWith("/");
     expect(mockBack).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe(INSTALL_STAMP);
   });
 
   it("kapat (X) da akışı tamamlar", async () => {
@@ -430,6 +442,6 @@ describe("İlk açılış akışı — giriş adımı", () => {
     await settle();
 
     expect(mockReplace).toHaveBeenCalledWith("/");
-    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe("1");
+    expect(await AsyncStorage.getItem(ONBOARDING_KEY)).toBe(INSTALL_STAMP);
   });
 });

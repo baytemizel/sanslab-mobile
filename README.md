@@ -161,7 +161,9 @@ scripts/                gen_assets.py · gen_mockups.py (marka görselleri üret
 i18n + kalıcı durum yüklenir → splash kapanır. Reklam/satın alma/Firebase
 başlatmaları ilk kareyi bloklamaz (`Promise.allSettled`). İlk açılışta
 onboarding → giriş ekranı gösterilir; giriş opsiyoneldir (misafir geçilebilir)
-ve bu adım geçilince akış bir daha gösterilmez. Splash, kullanıcı doğru ekrana
+ve bu adım geçilince akış bir daha gösterilmez (bayrak kurulum zamanına bağlı:
+güncellemede korunur, sil-kur/yeni telefonda Android yedeği geri yüklense bile
+akış yeniden gösterilir — `src/state/onboarding.ts`). Splash, kullanıcı doğru ekrana
 yönlendirildikten sonra kapanır. Anahtar/native modül
 eksikse servisler sessizce devre dışı kalır ve uygulama çalışmaya devam eder.
 

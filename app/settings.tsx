@@ -10,12 +10,13 @@ import {
   ToastAndroid,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { Segmented, PrimaryButton } from "../src/components/Buttons";
 import BottomSheet from "../src/components/BottomSheet";
+import ScreenHeader from "../src/components/ScreenHeader";
 import { useApp } from "../src/state/AppContext";
 import type { Lang } from "../src/i18n";
 import { hasPremium, restore } from "../src/services/revenuecat";
@@ -104,12 +105,13 @@ export default function Settings() {
     <ScrollView
       contentContainerStyle={{
         paddingHorizontal: 20,
-        paddingTop: insets.top + 60,
+        paddingTop: insets.top + 8,
         paddingBottom: insets.bottom + 44,
       }}
       showsVerticalScrollIndicator={false}
     >
-      <Stack.Screen options={{ title: t("common.settings") }} />
+      {/* içerikle birlikte kayan header */}
+      <ScreenHeader title={t("common.settings")} />
 
       {/* hesap */}
       <Text style={[styles.section, { color: theme.subText }]}>

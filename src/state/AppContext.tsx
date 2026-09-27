@@ -35,11 +35,12 @@ import {
   type SavedCoupon,
 } from "./history";
 import { canFavorite } from "../premium/gates";
+import { loadOnboarded, saveOnboarded } from "./onboarding";
 
 export type ThemePref = "system" | "light" | "dark";
 
 export const THEME_KEY = "@sanslab/theme";
-export const ONBOARDING_KEY = "@sanslab/onboarding-v1";
+export { ONBOARDING_KEY } from "./onboarding";
 
 interface AppState {
   /* tema & dil */
@@ -103,15 +104,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     (async () => {
-      const [storedTheme, storedOnboarding, storedHistory] = await Promise.all([
+      const [storedTheme, storedOnboarded, storedHistory] = await Promise.all([
         AsyncStorage.getItem(THEME_KEY).catch(() => null),
-        AsyncStorage.getItem(ONBOARDING_KEY).catch(() => null),
+        loadOnboarded(),
         loadHistory(),
       ]);
 
       if (cancelled) return;
       if (storedTheme) setThemePrefState(storedTheme as ThemePref);
-      setOnboarded(storedOnboarding === "1");
+      setOnboarded(storedOnboarded);
       setHistory(storedHistory);
       setLangState((i18n.language as Lang) ?? "tr");
       setHydrated(true);
@@ -183,7 +184,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = useCallback(async () => {
     setOnboarded(true);
-    await AsyncStorage.setItem(ONBOARDING_KEY, "1").catch(() => {});
+    await saveOnboarded();
   }, []);
 
   const recordCoupons = useCallback((coupons: Coupon[]) => {

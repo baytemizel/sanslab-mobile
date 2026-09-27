@@ -170,7 +170,7 @@ export default {
     maybeLater: "Maybe later",
   },
   auth: {
-    signInTitle: "Welcome back",
+    signInTitle: "Welcome",
     signInSubtitle:
       "Signing in is optional. It only carries your Premium and history across devices.",
     signUpTitle: "Create an account",

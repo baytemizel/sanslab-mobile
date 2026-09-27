@@ -170,7 +170,7 @@ export default {
     maybeLater: "Belki sonra",
   },
   auth: {
-    signInTitle: "Tekrar hoş geldin",
+    signInTitle: "Hoş geldin",
     signInSubtitle:
       "Giriş yapmak zorunlu değildir. Yalnızca Premium'unu ve geçmişini cihazlar arasında taşımak için gerekir.",
     signUpTitle: "Hesap oluştur",

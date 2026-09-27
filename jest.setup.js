@@ -154,6 +154,11 @@ jest.mock("@react-native-google-signin/google-signin", () => ({
   },
 }));
 
+/* -------------------------- expo-application -------------------------- */
+jest.mock("expo-application", () => ({
+  getInstallationTimeAsync: jest.fn(async () => new Date(1700000000000)),
+}));
+
 /* --------------------------- Facebook SDK --------------------------- */
 jest.mock("react-native-fbsdk-next", () => ({
   Settings: { initializeSDK: jest.fn() },

@@ -94,11 +94,11 @@ function RootNavigator({ onReady }: { onReady: () => void }) {
           name="onboarding"
           options={{ headerShown: false, gestureEnabled: false, animation: "fade" }}
         />
-        {/* oyun ekranı kendi kayan header'ını çizer (ScreenHeader) */}
+        {/* oyun ve ayarlar ekranları kendi kayan header'ını çizer (ScreenHeader) */}
         <Stack.Screen name="game/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="stats/[id]" options={{ title: "" }} />
         <Stack.Screen name="history" options={{ title: "" }} />
-        <Stack.Screen name="settings" options={{ title: "" }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="account" options={{ title: "" }} />
         <Stack.Screen
           name="paywall"
