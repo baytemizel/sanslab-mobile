@@ -17,17 +17,24 @@ import {
   addCustomerInfoListener,
   getCustomerInfo,
   hasPremium,
+  hasPurchasesKey,
   linkUser,
   unlinkUser,
 } from "../services/revenuecat";
 import { observeUser, type AuthUser } from "../services/auth";
 import { setUserProperties } from "../services/firebase";
 import { teardownAds } from "../services/ads";
+import {
+  mergeHistories,
+  pullHistory,
+  pushHistoryChanges,
+} from "../services/cloudSync";
 import type { Coupon } from "../games/generator";
 import {
   addToHistory,
   countFavorites,
   loadHistory,
+  prependToHistory,
   pruneHistory,
   removeFromHistory,
   saveHistory,
@@ -86,17 +93,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [onboarded, setOnboarded] = useState(false);
   const [history, setHistory] = useState<SavedCoupon[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  /**
+   * Premium durumu kesinleşmeden geçmiş BUDANMAZ: aksi halde açılışta ya da
+   * yeni cihazda girişte Premium kullanıcının geçmişi — ve bulut yedeği —
+   * RevenueCat yanıtı gelmeden ücretsiz sürüm sınırına inerdi.
+   */
+  const [premiumKnown, setPremiumKnown] = useState(false);
 
-  // history state'ini efekt bağımlılığı yapmadan okuyabilmek için.
+  // state'i efekt bağımlılığı yapmadan okuyabilmek için.
   const historyRef = useRef<SavedCoupon[]>([]);
   historyRef.current = history;
   const premiumRef = useRef(false);
   premiumRef.current = isPremium;
+  const premiumKnownRef = useRef(false);
+  premiumKnownRef.current = premiumKnown;
+  const userRef = useRef<AuthUser | null>(null);
+  userRef.current = user;
+
+  /** RevenueCat yanıtını uygular; yanıt yoksa ve anahtar varsa durum bilinmiyor. */
+  const applyCustomerInfo = useCallback((info: CustomerInfo | null) => {
+    if (info) {
+      setIsPremium(hasPremium(info));
+      setPremiumKnown(true);
+    } else if (!hasPurchasesKey()) {
+      setIsPremium(false);
+      setPremiumKnown(true);
+    }
+  }, []);
 
   const refreshPremium = useCallback(async () => {
-    const info = await getCustomerInfo();
-    setIsPremium(hasPremium(info));
-  }, []);
+    applyCustomerInfo(await getCustomerInfo());
+  }, [applyCustomerInfo]);
 
   /* ------------------------- ilk yükleme ------------------------- */
 
@@ -130,11 +157,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(
     () =>
       addCustomerInfoListener((info: CustomerInfo) => {
-        const premium = hasPremium(info);
-        setIsPremium(premium);
-        if (premium) teardownAds();
+        applyCustomerInfo(info);
+        if (hasPremium(info)) teardownAds();
       }),
-    []
+    [applyCustomerInfo]
   );
 
   /* ----------------------- auth dinleyicisi ----------------------- */
@@ -142,15 +168,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(
     () =>
       observeUser((u) => {
+        userRef.current = u;
         setUser(u);
+        // Hesap değişti: Premium bu hesaba göre yeniden çözülene kadar budama yok.
+        if (u && hasPurchasesKey()) setPremiumKnown(false);
         // Premium'u hesaba bağla ki cihaz değişince taşınsın.
         (u ? linkUser(u.uid) : unlinkUser())
           .then((info) => {
-            if (info) setIsPremium(hasPremium(info));
+            if (info) applyCustomerInfo(info);
           })
           .catch(() => {});
       }),
-    []
+    [applyCustomerInfo]
   );
 
   /* -------------------- analytics kullanıcı özellikleri -------------------- */
@@ -159,16 +188,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserProperties({ premium: isPremium, signedIn: Boolean(user) });
   }, [isPremium, user]);
 
+  /* ------------------------- geçmiş yazımı ------------------------- */
+
+  /**
+   * Geçmişi önce CİHAZA yazar (asıl kaynak); giriş yapılmışsa değişikliği
+   * buluta arka planda, beklemeden iletir.
+   */
+  const commitHistory = useCallback((next: SavedCoupon[]) => {
+    const prev = historyRef.current;
+    historyRef.current = next;
+    setHistory(next);
+    saveHistory(next);
+    const uid = userRef.current?.uid;
+    if (uid) pushHistoryChanges(uid, prev, next);
+  }, []);
+
   /* --------- premium değişince geçmiş limitini yeniden uygula --------- */
 
   useEffect(() => {
-    if (!hydrated) return;
-    setHistory((prev) => {
-      const next = pruneHistory(prev, { isPremium });
-      if (next.length !== prev.length) saveHistory(next);
-      return next;
+    if (!hydrated || !premiumKnown) return;
+    const prev = historyRef.current;
+    const next = pruneHistory(prev, { isPremium });
+    if (next.length !== prev.length) commitHistory(next);
+  }, [isPremium, premiumKnown, hydrated, commitHistory]);
+
+  /* ------------- girişte bulut yedeğini cihazdakiyle birleştir ------------- */
+
+  const signedInUid = user?.uid;
+  useEffect(() => {
+    if (!hydrated || !signedInUid) return;
+    const uid = signedInUid;
+    let cancelled = false;
+    pullHistory(uid).then((remote) => {
+      if (cancelled || remote === null) return;
+      const union = mergeHistories(historyRef.current, remote);
+      // Premium durumu henüz bilinmiyorsa budama sonraya (yukarıdaki efekte) kalır.
+      const merged = premiumKnownRef.current
+        ? pruneHistory(union, { isPremium: premiumRef.current })
+        : union;
+      historyRef.current = merged;
+      setHistory(merged);
+      saveHistory(merged);
+      // Bulutta olmayanları gönder, sınır dışında kalanları buluttan da sil.
+      pushHistoryChanges(uid, remote, merged);
     });
-  }, [isPremium, hydrated]);
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, signedInUid]);
 
   /* ------------------------- eylemler ------------------------- */
 
@@ -187,13 +254,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await saveOnboarded();
   }, []);
 
-  const recordCoupons = useCallback((coupons: Coupon[]) => {
-    const next = addToHistory(historyRef.current, coupons, {
-      isPremium: premiumRef.current,
-    });
-    setHistory(next);
-    saveHistory(next);
-  }, []);
+  const recordCoupons = useCallback(
+    (coupons: Coupon[]) => {
+      const list = historyRef.current;
+      // Premium durumu bilinmiyorsa budama, durum kesinleşince yapılır.
+      const next = premiumKnownRef.current
+        ? addToHistory(list, coupons, { isPremium: premiumRef.current })
+        : prependToHistory(list, coupons);
+      commitHistory(next);
+    },
+    [commitHistory]
+  );
 
   /** Favori limiti aşıldıysa `false` döner (çağıran taraf paywall açar). */
   const toggleFavorite = useCallback((uid: string): boolean => {
@@ -206,22 +277,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ) {
       return false;
     }
-    const next = toggleFav(list, uid);
-    setHistory(next);
-    saveHistory(next);
+    commitHistory(toggleFav(list, uid));
     return true;
-  }, []);
+  }, [commitHistory]);
 
-  const removeCoupon = useCallback((uid: string) => {
-    const next = removeFromHistory(historyRef.current, uid);
-    setHistory(next);
-    saveHistory(next);
-  }, []);
+  const removeCoupon = useCallback(
+    (couponUid: string) => {
+      commitHistory(removeFromHistory(historyRef.current, couponUid));
+    },
+    [commitHistory]
+  );
 
   const clearAllHistory = useCallback(() => {
-    setHistory([]);
-    saveHistory([]);
-  }, []);
+    commitHistory([]);
+  }, [commitHistory]);
 
   /* ------------------------- türetilenler ------------------------- */
 

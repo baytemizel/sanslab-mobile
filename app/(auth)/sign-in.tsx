@@ -33,9 +33,9 @@ const IOS_PROVIDERS: SocialProvider[] = ["apple", "google", "facebook"];
 const ANDROID_PROVIDERS: SocialProvider[] = ["google", "facebook"];
 
 const SIGN_IN: Record<SocialProvider, () => Promise<AuthResult>> = {
-  apple: signInWithApple,
-  google: signInWithGoogle,
-  facebook: signInWithFacebook,
+  apple: () => signInWithApple(),
+  google: () => signInWithGoogle(),
+  facebook: () => signInWithFacebook(),
 };
 
 const CONFIGURED: Record<SocialProvider, () => boolean> = {
@@ -67,18 +67,23 @@ export default function SignIn() {
   const available = isAuthAvailable() && providers.length > 0;
 
   /**
-   * Ayarlar/Hesap'tan açıldıysa modal kapanır. İlk açılış akışında
-   * (onboarding'den geldiysek) giriş adımı geçilmiş sayılır: akış tamamlanır
-   * ve ana ekrana geçilir — sonraki açılışlarda onboarding/giriş gösterilmez.
+   * Ayarlar/Hesap'tan açıldıysa: giriş başarılıysa ana ekrana dönülür; misafir
+   * ya da kapat ile açıldığı ekrana. İlk açılış akışında (onboarding'den
+   * geldiysek) giriş adımı geçilmiş sayılır: akış tamamlanır ve ana ekrana
+   * geçilir — sonraki açılışlarda onboarding/giriş gösterilmez.
    */
-  const leave = useCallback(async () => {
-    if (onboarded) {
-      router.back();
-      return;
-    }
-    await completeOnboarding();
-    router.replace("/");
-  }, [onboarded, completeOnboarding, router]);
+  const leave = useCallback(
+    async (signedIn: boolean) => {
+      if (onboarded) {
+        if (signedIn) router.dismissTo("/");
+        else router.back();
+        return;
+      }
+      await completeOnboarding();
+      router.replace("/");
+    },
+    [onboarded, completeOnboarding, router]
+  );
 
   const signIn = useCallback(
     async (provider: SocialProvider) => {
@@ -88,7 +93,7 @@ export default function SignIn() {
       setBusy(null);
       if (res.user) {
         logEvent("login", { method: provider });
-        await leave();
+        await leave(true);
       } else if (res.error && res.error !== "cancelled") {
         setError(res.error);
       }
@@ -106,7 +111,7 @@ export default function SignIn() {
       showsVerticalScrollIndicator={false}
     >
       <Pressable
-        onPress={leave}
+        onPress={() => leave(false)}
         hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel={t("common.close")}
@@ -159,7 +164,7 @@ export default function SignIn() {
 
         {/* Giriş her zaman opsiyonel — mağaza politikası ve UX gereği. */}
         <Pressable
-          onPress={leave}
+          onPress={() => leave(false)}
           accessibilityRole="link"
           style={styles.guest}
         >

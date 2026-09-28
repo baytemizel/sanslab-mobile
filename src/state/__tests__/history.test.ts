@@ -1,4 +1,5 @@
 import {
+  prependToHistory,
   addToHistory,
   countFavorites,
   filterHistory,
@@ -154,5 +155,23 @@ describe("filterHistory", () => {
     expect(
       filterHistory(list, { gameId: "super", favoritesOnly: true }).map((c) => c.uid)
     ).toEqual(["c"]);
+  });
+});
+
+describe("prependToHistory", () => {
+  it("yeni kuponları başa ekler, budamaz (Premium durumu bilinmiyorken)", () => {
+    const list = Array.from({ length: 12 }, (_, i) => ({
+      uid: `old${i}`,
+      gameId: "sayisal",
+      pools: [],
+      mode: "random" as const,
+      createdAt: i,
+      favorite: false,
+    }));
+    const next = prependToHistory(list, [
+      { uid: "new", gameId: "sayisal", pools: [], mode: "random", createdAt: 99 },
+    ]);
+    expect(next).toHaveLength(13);
+    expect(next[0]).toMatchObject({ uid: "new", favorite: false });
   });
 });

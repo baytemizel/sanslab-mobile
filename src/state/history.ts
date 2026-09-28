@@ -2,8 +2,8 @@
  * Kupon geçmişi & favoriler / Coupon history & favourites  (FAZ 3)
  *
  * Paywall'da vaat edilen "sınırsız geçmiş + favoriler" faydasının gerçek
- * karşılığıdır. Veriler yalnızca CİHAZDA (AsyncStorage) tutulur — sunucuya
- * gönderilmez, hesap gerektirmez.
+ * karşılığıdır. Veriler CİHAZDA (AsyncStorage) tutulur ve hesap gerektirmez;
+ * giriş yapılmışsa ayrıca Firestore'a yedeklenir (src/services/cloudSync.ts).
  *
  * Free katman: son `FREE_HISTORY_LIMIT` kupon + `FREE_FAVORITE_LIMIT` favori.
  * Premium: `PREMIUM_HISTORY_LIMIT` kupon, sınırsıza yakın favori.
@@ -26,15 +26,22 @@ export interface SavedCoupon extends Coupon {
 /* --------------------------- Saf yardımcılar --------------------------- */
 /* Bu fonksiyonlar I/O yapmaz; doğrudan birim testi yazılabilir. */
 
+/** Yeni kuponları listenin başına ekler (budamadan). */
+export function prependToHistory(
+  list: SavedCoupon[],
+  coupons: Coupon[]
+): SavedCoupon[] {
+  const incoming: SavedCoupon[] = coupons.map((c) => ({ ...c, favorite: false }));
+  return [...incoming, ...list];
+}
+
 /** Yeni kuponları listenin başına ekler ve limite göre budar. */
 export function addToHistory(
   list: SavedCoupon[],
   coupons: Coupon[],
   ctx: GateContext
 ): SavedCoupon[] {
-  const incoming: SavedCoupon[] = coupons.map((c) => ({ ...c, favorite: false }));
-  const merged = [...incoming, ...list];
-  return pruneHistory(merged, ctx);
+  return pruneHistory(prependToHistory(list, coupons), ctx);
 }
 
 /** Favoriler korunarak listeyi limite indirir. */
@@ -83,8 +90,11 @@ export function filterHistory(
 
 /* ------------------------------ Kalıcılık ------------------------------ */
 
-/** Bozuk/eski kayıtları ayıklar — sürüm yükseltmelerinde çökmeyi önler. */
-function sanitize(raw: unknown): SavedCoupon[] {
+/**
+ * Bozuk/eski kayıtları ayıklar — sürüm yükseltmelerinde çökmeyi önler. Buluttan
+ * (Firestore) gelen kayıtlar da aynı süzgeçten geçer.
+ */
+export function sanitizeHistory(raw: unknown): SavedCoupon[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(
     (c: any) =>
@@ -99,7 +109,7 @@ export async function loadHistory(): Promise<SavedCoupon[]> {
   try {
     const raw = await AsyncStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
-    return sanitize(JSON.parse(raw));
+    return sanitizeHistory(JSON.parse(raw));
   } catch {
     return [];
   }

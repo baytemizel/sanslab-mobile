@@ -28,6 +28,14 @@ export function isPurchasesAvailable(): boolean {
   return _configured;
 }
 
+/**
+ * Bu platform için RevenueCat anahtarı var mı? Yoksa Premium hiçbir zaman
+ * açılamaz (kesin "free"); varsa yanıt gelene kadar Premium durumu bilinmez.
+ */
+export function hasPurchasesKey(): boolean {
+  return Boolean(apiKey());
+}
+
 function apiKey(): string | undefined {
   return Platform.OS === "ios" ? revenueCatKeys.ios : revenueCatKeys.android;
 }

@@ -11,6 +11,7 @@ import React from "react";
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockDismissTo = jest.fn();
 let mockParams: Record<string, string> = {};
 
 jest.mock("expo-router", () => ({
@@ -19,6 +20,7 @@ jest.mock("expo-router", () => ({
     push: mockPush,
     replace: mockReplace,
     back: mockBack,
+    dismissTo: mockDismissTo,
     canGoBack: () => true,
   }),
   useLocalSearchParams: () => mockParams,
@@ -65,6 +67,7 @@ beforeEach(async () => {
   mockPush.mockClear();
   mockReplace.mockClear();
   mockBack.mockClear();
+  mockDismissTo.mockClear();
   mockParams = {};
   // Testler arası sızıntı olmasın: geçmiş/tema/onboarding bayrakları sıfırlanır.
   await AsyncStorage.clear();
@@ -408,6 +411,37 @@ describe("Giriş ekranı — auth yapılandırılmış derleme", () => {
     expect(screen.queryByText(tr.auth.apple)).toBeNull();
     expect(screen.getByText(tr.auth.google)).toBeTruthy();
     expect(screen.getByText(tr.auth.facebook)).toBeTruthy();
+  });
+
+  it("Ayarlar'dan açıldıysa başarılı girişten sonra ana ekrana döner", async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, INSTALL_STAMP);
+    jest.spyOn(auth, "signInWithFacebook").mockResolvedValue({
+      user: {
+        uid: "u1",
+        email: "a@b.co",
+        displayName: "Test",
+        photoURL: null,
+        emailVerified: true,
+        providers: ["facebook.com"],
+      },
+    });
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    fireEvent.press(screen.getByText(tr.auth.facebook));
+    await waitFor(() => expect(mockDismissTo).toHaveBeenCalledWith("/"));
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it("Ayarlar'dan açıldıysa misafir devam açıldığı ekrana döner", async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, INSTALL_STAMP);
+    renderWithProviders(<SignIn />);
+    await settle();
+
+    fireEvent.press(screen.getByText(tr.auth.continueAsGuest));
+    await settle();
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockDismissTo).not.toHaveBeenCalled();
   });
 
   it("yapılandırılmamış sağlayıcıya dokununca 'kullanılamıyor' der, çökmez", async () => {

@@ -79,7 +79,10 @@ rozetiyle gösterilir.
 
 Uygulamanın tamamı üyeliksiz çalışır. Giriş yalnızca Premium'u ve kupon
 geçmişini cihazlar arasında taşımak içindir (Android: Google · Facebook,
-iOS: Apple · Google · Facebook — e-posta/şifre girişi yoktur).
+iOS: Apple · Google · Facebook — e-posta/şifre girişi yoktur). E-posta başka
+bir yöntemle kayıtlıysa o yöntemle devam etmesi söylenir. Giriş yapılmışsa kupon
+geçmişi cihazda kalır ve ayrıca Firestore'a arka planda yedeklenir; cihaz
+sıfırlansa da girişte geri gelir (`src/services/cloudSync.ts`, `firestore.rules`).
 Firebase yapılandırılmamış bir derlemede giriş ekranı kendini kapatır ve
 uygulama misafir modunda tam çalışmaya devam eder. Mağaza zorunluluğu olan
 **uygulama içi hesap silme** akışı mevcuttur (Ayarlar → Hesap → Hesabımı sil).

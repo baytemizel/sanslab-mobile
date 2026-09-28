@@ -15,6 +15,7 @@
 import { Platform } from "react-native";
 
 import { authConfig, firebaseEnabled } from "./env";
+import { deleteCloudHistory } from "./cloudSync";
 
 export interface AuthUser {
   uid: string;
@@ -226,129 +227,154 @@ export async function sendPasswordReset(
   }
 }
 
-/* ---------------------------- Google ---------------------------- */
+/* ------------------------- Sosyal girişler ------------------------- */
 
-export async function signInWithGoogle(): Promise<AuthResult> {
-  const api = authApi();
-  if (!api) return { user: null, error: "unavailable" };
-  const webClientId = authConfig.googleWebClientId;
-  if (!webClientId) return { user: null, error: "unavailable" };
+export type SocialProviderId = "google.com" | "apple.com" | "facebook.com";
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { GoogleSignin } = require("@react-native-google-signin/google-signin");
-    GoogleSignin.configure({ webClientId });
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+const PROVIDER_NAME: Record<SocialProviderId, string> = {
+  "google.com": "Google",
+  "apple.com": "Apple",
+  "facebook.com": "Facebook",
+};
 
-    const response = await GoogleSignin.signIn();
-    const idToken = response?.data?.idToken ?? response?.idToken;
-    if (!idToken) return { user: null, error: "cancelled" };
-
-    const credential = api.GoogleAuthProvider.credential(idToken);
-    const cred = await api.signInWithCredential(api.getAuth(), credential);
-    return { user: toAuthUser(cred.user) };
-  } catch (e) {
-    // DEVELOPER_ERROR (10) → Firebase'de bu imzanın SHA-1'i kayıtlı değil.
-    if (__DEV__) console.warn("[auth] Google girişi başarısız:", e);
-    return { user: null, error: mapSocialAuthError(e) };
-  }
+/** Sağlayıcıdan alınmış, henüz Firebase'e verilmemiş kimlik. */
+interface ProviderLogin {
+  credential: any;
+  /** Apple ad soyadı yalnızca ilk girişte verir. */
+  displayName?: string;
 }
 
-/* ---------------------------- Apple ---------------------------- */
+type ProviderLoginFn = (api: any) => Promise<ProviderLogin | null>;
 
-export async function signInWithApple(): Promise<AuthResult> {
-  const api = authApi();
-  if (!api) return { user: null, error: "unavailable" };
-  if (Platform.OS !== "ios") return { user: null, error: "unavailable" };
+const googleLogin: ProviderLoginFn = async (api) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { GoogleSignin } = require("@react-native-google-signin/google-signin");
+  GoogleSignin.configure({ webClientId: authConfig.googleWebClientId });
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-  try {
+  const response = await GoogleSignin.signIn();
+  const idToken = response?.data?.idToken ?? response?.idToken;
+  if (!idToken) return null;
+  return { credential: api.GoogleAuthProvider.credential(idToken) };
+};
+
+const appleLogin: ProviderLoginFn = async (api) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const AppleAuthentication = require("expo-apple-authentication");
+  const res = await AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+  });
+  if (!res.identityToken) return null;
+
+  const name = [res.fullName?.givenName, res.fullName?.familyName]
+    .filter(Boolean)
+    .join(" ");
+  return {
+    credential: api.AppleAuthProvider.credential(res.identityToken),
+    displayName: name || undefined,
+  };
+};
+
+const facebookLogin: ProviderLoginFn = async (api) => {
+  const {
+    AccessToken,
+    AuthenticationToken,
+    LoginManager,
+    Settings,
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const AppleAuthentication = require("expo-apple-authentication");
-    const credentialResponse = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
-    if (!credentialResponse.identityToken) {
-      return { user: null, error: "cancelled" };
-    }
-    const credential = api.AppleAuthProvider.credential(
-      credentialResponse.identityToken
+  } = require("react-native-fbsdk-next");
+  // Otomatik başlatma kapalı (gizlilik): SDK yalnızca kullanıcı Facebook'a
+  // dokununca başlar.
+  Settings.initializeSDK();
+  const permissions = ["public_profile", "email"];
+
+  if (Platform.OS === "ios") {
+    // iOS: izleme izni olmadan Facebook "Limited Login" döner; Firebase bunu
+    // OIDC token + nonce ile doğrular.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Crypto = require("expo-crypto");
+    const nonce = Crypto.randomUUID();
+    const nonceSha256 = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      nonce
     );
-    const cred = await api.signInWithCredential(api.getAuth(), credential);
-
-    const fullName = credentialResponse.fullName;
-    const name = [fullName?.givenName, fullName?.familyName]
-      .filter(Boolean)
-      .join(" ");
-    if (name && !cred.user.displayName) {
-      await api.updateProfile(cred.user, { displayName: name });
-    }
-    return { user: toAuthUser(cred.user) };
-  } catch (e) {
-    return { user: null, error: mapSocialAuthError(e) };
-  }
-}
-
-/* ---------------------------- Facebook ---------------------------- */
-
-export async function signInWithFacebook(): Promise<AuthResult> {
-  const api = authApi();
-  if (!api) return { user: null, error: "unavailable" };
-  if (!authConfig.facebookAppId) return { user: null, error: "unavailable" };
-
-  try {
-    const {
-      AccessToken,
-      AuthenticationToken,
-      LoginManager,
-      Settings,
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-    } = require("react-native-fbsdk-next");
-    // Otomatik başlatma kapalı (gizlilik): SDK yalnızca kullanıcı Facebook'a
-    // dokununca başlar.
-    Settings.initializeSDK();
-
-    const permissions = ["public_profile", "email"];
-    let credential: any;
-
-    if (Platform.OS === "ios") {
-      // iOS: izleme izni olmadan Facebook "Limited Login" döner; Firebase bunu
-      // OIDC token + nonce ile doğrular.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Crypto = require("expo-crypto");
-      const nonce = Crypto.randomUUID();
-      const nonceSha256 = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        nonce
-      );
-      const result = await LoginManager.logInWithPermissions(
-        permissions,
-        "limited",
-        nonceSha256
-      );
-      if (result.isCancelled) return { user: null, error: "cancelled" };
-      const token = await AuthenticationToken.getAuthenticationTokenIOS();
-      if (!token?.authenticationToken) return { user: null, error: "cancelled" };
-      credential = api.FacebookAuthProvider.credential(
+    const result = await LoginManager.logInWithPermissions(
+      permissions,
+      "limited",
+      nonceSha256
+    );
+    if (result.isCancelled) return null;
+    const token = await AuthenticationToken.getAuthenticationTokenIOS();
+    if (!token?.authenticationToken) return null;
+    return {
+      credential: api.FacebookAuthProvider.credential(
         token.authenticationToken,
         nonce
-      );
-    } else {
-      const result = await LoginManager.logInWithPermissions(permissions);
-      if (result.isCancelled) return { user: null, error: "cancelled" };
-      const token = await AccessToken.getCurrentAccessToken();
-      if (!token?.accessToken) return { user: null, error: "cancelled" };
-      credential = api.FacebookAuthProvider.credential(token.accessToken);
-    }
+      ),
+    };
+  }
 
-    const cred = await api.signInWithCredential(api.getAuth(), credential);
-    return { user: toAuthUser(cred.user) };
+  const result = await LoginManager.logInWithPermissions(permissions);
+  if (result.isCancelled) return null;
+  const token = await AccessToken.getCurrentAccessToken();
+  if (!token?.accessToken) return null;
+  return { credential: api.FacebookAuthProvider.credential(token.accessToken) };
+};
+
+const LOGIN: Record<SocialProviderId, ProviderLoginFn> = {
+  "google.com": googleLogin,
+  "apple.com": appleLogin,
+  "facebook.com": facebookLogin,
+};
+
+/** Bu derlemede yapılandırılmış sosyal sağlayıcılar. */
+function configuredProviders(): SocialProviderId[] {
+  const list: SocialProviderId[] = [];
+  if (authConfig.googleWebClientId) list.push("google.com");
+  if (Platform.OS === "ios") list.push("apple.com");
+  if (authConfig.facebookAppId) list.push("facebook.com");
+  return list;
+}
+
+async function signInWithProvider(provider: SocialProviderId): Promise<AuthResult> {
+  const api = authApi();
+  if (!api) return { user: null, error: "unavailable" };
+  if (!configuredProviders().includes(provider)) {
+    return { user: null, error: "unavailable" };
+  }
+
+  try {
+    const login = await LOGIN[provider](api);
+    if (!login) return { user: null, error: "cancelled" };
+
+    // Aynı e-posta başka yöntemle kayıtlıysa Firebase "account-exists" döner;
+    // kullanıcıya o yöntemle devam etmesi söylenir (auth.error.account-exists).
+    const result = await api.signInWithCredential(api.getAuth(), login.credential);
+
+    if (login.displayName && !result.user.displayName) {
+      await api.updateProfile(result.user, { displayName: login.displayName });
+    }
+    return { user: toAuthUser(result.user) };
   } catch (e) {
-    if (__DEV__) console.warn("[auth] Facebook girişi başarısız:", e);
+    // Google DEVELOPER_ERROR (10) → Firebase'de bu imzanın SHA-1'i kayıtlı değil.
+    if (__DEV__) console.warn(`[auth] ${PROVIDER_NAME[provider]} girişi başarısız:`, e);
     return { user: null, error: mapSocialAuthError(e) };
   }
+}
+
+export function signInWithGoogle(): Promise<AuthResult> {
+  return signInWithProvider("google.com");
+}
+
+export function signInWithApple(): Promise<AuthResult> {
+  return signInWithProvider("apple.com");
+}
+
+export function signInWithFacebook(): Promise<AuthResult> {
+  return signInWithProvider("facebook.com");
 }
 
 /* ---------------------------- Oturum ---------------------------- */
@@ -400,6 +426,16 @@ export async function deleteAccount(
       const credential = api.EmailAuthProvider.credential(user.email, password);
       await api.reauthenticateWithCredential(user, credential);
     }
+
+    // Bulut yedeği hesapla birlikte silinir; güvenlik kuralları yalnızca
+    // oturum sahibine izin verdiği için hesap silinmeden ÖNCE.
+    try {
+      await deleteCloudHistory(user.uid);
+    } catch (e: any) {
+      // Kurallar hiç yazmaya izin vermiyorsa bulutta veri de yoktur.
+      if (!String(e?.code ?? "").includes("permission-denied")) return "network";
+    }
+
     await api.deleteUser(user);
     return null;
   } catch (e) {

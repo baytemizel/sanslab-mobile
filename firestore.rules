@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// ŞansLab — Firestore güvenlik kuralları ((default) veritabanı)
+//
+// Kupon geçmişi yedeği: users/{uid}/coupons/{couponUid}
+// Her kullanıcı YALNIZCA kendi verisini okuyup yazabilir; misafir (girişsiz)
+// istekler ve başka hesapların verisi reddedilir.
+//
+// Yayınlama: Firebase Console → Firestore Database → Rules → bu içeriği
+// yapıştır → Publish. (ya da Firebase CLI: `firebase deploy --only firestore:rules`)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/coupons/{couponId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == couponId
+        && request.resource.data.keys().hasAll(['uid', 'gameId', 'pools', 'createdAt'])
+        && request.resource.data.size() <= 12;
+    }
+
+    // Diğer her şey kapalı.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

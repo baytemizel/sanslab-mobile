@@ -134,6 +134,17 @@ erişilemezse gönderim reddedilir.
    - iOS'ta izleme izni olmadan "Limited Login" kullanılır; Firebase bunu
      nonce ile doğrular, ek ayar gerekmez.
 5. Analytics ve Crashlytics'i etkinleştir.
+6. **Firestore** — `(default)` veritabanı kupon geçmişini yedekler
+   (`users/{uid}/coupons/{couponUid}`, yalnızca giriş yapmış kullanıcı):
+   - Firestore Database → **Rules** → repo kökündeki `firestore.rules`
+     içeriğini yapıştır → **Publish**. Kurallar yayınlanmazsa (üretim modu
+     varsayılanı "her şeyi reddet") yedek sessizce yazılamaz.
+   - Cihaz asıl kaynaktır; buluta arka planda yazılır, girişte birleştirilir.
+     Hesap silinirken buluttaki kuponlar da silinir.
+7. **Aynı e-posta, farklı yöntem** — Authentication → Settings → User account
+   linking "Link accounts that use the same email" (varsayılan). E-posta başka
+   bir yöntemle kayıtlıysa giriş ekranı "o yöntemle devam et" uyarısı verir;
+   otomatik birleştirme yok (sunucu tarafı gerektirir).
 
 > Bu dosyalar gizlidir; `.gitignore` zaten hariç tutar.
 
