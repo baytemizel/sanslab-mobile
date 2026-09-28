@@ -27,6 +27,7 @@ import {
   isFacebookAuthAvailable,
   isGoogleAuthAvailable,
   mapAuthError,
+  mapSocialAuthError,
   observeUser,
   sendPasswordReset,
   signInWithApple,
@@ -158,6 +159,15 @@ describe("Auth — Firebase yapılandırılmamış derleme", () => {
     expect(
       mapAuthError({ code: "auth/account-exists-with-different-credential" })
     ).toBe("account-exists");
+  });
+
+  it("sosyal girişte doğrulanamayan token 'şifre hatalı' değil, genel hatadır", () => {
+    const e = { code: "auth/invalid-credential" };
+    expect(mapAuthError(e)).toBe("wrong-password"); // e-posta/şifre akışı
+    expect(mapSocialAuthError(e)).toBe("unknown");
+    expect(mapSocialAuthError({ code: "auth/network-request-failed" })).toBe(
+      "network"
+    );
     expect(mapAuthError({ code: "auth/wrong-password" })).toBe("wrong-password");
     expect(mapAuthError({ code: "auth/invalid-credential" })).toBe("wrong-password");
     expect(mapAuthError({ code: "auth/email-already-in-use" })).toBe(

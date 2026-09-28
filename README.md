@@ -239,7 +239,7 @@ Lansman kontrol listesi (ayrıntılar `HANDOFF.md`):
 - [ ] AdMob gerçek birim kimlikleri + plugin App ID'leri
 - [ ] AdMob **Privacy & messaging → GDPR mesajı** oluşturuldu (AEA/UK/CH zorunlu)
 - [ ] Firebase yapılandırma dosyaları + Auth sağlayıcıları (Google · Facebook · Apple) açık
-- [ ] Facebook uygulaması: App ID + Client token, key hash'ler, Firebase redirect URI (HANDOFF §5)
+- [x] Facebook uygulaması: App ID + Client token (`app.json`), key hash'ler, Firebase redirect URI (HANDOFF §5)
 - [ ] Gizlilik & Koşullar URL'leri yayında (repo: [`store/privacy-policy.md`](store/privacy-policy.md), [`store/terms.md`](store/terms.md))
 - [ ] Play **Data safety** formu: AD_ID · Analytics · Crashlytics · (hesap varsa) e-posta & ad
 - [ ] Play **hesap silme** beyanı — uygulama içi akış mevcut (Ayarlar → Hesap)

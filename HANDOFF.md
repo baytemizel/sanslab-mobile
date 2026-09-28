@@ -93,7 +93,7 @@ platformun Firebase dosyası da mevcut.
 | `revenuecat.ios` / `.android` | `*_REPLACE_ME` | RevenueCat public SDK key'leri |
 | `admob.*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
 | `auth.googleWebClientId` | `256609557198-q0kg…apps.googleusercontent.com` ✅ | Ayarlandı — Android'de çalışması için Firebase'e SHA-1 parmak izleri eklenmeli |
-| `auth.facebookAppId` / `.facebookClientToken` | `REPLACE_WITH_...` | Meta for Developers → App ID ve Client token (bkz. §5) |
+| `auth.facebookAppId` / `.facebookClientToken` | `1879696566334647` / `15d5…7241` ✅ | Ayarlandı — App Secret yalnızca Firebase'de, uygulamaya konmaz |
 
 Hepsi `.env` ile de geçilebilir — bkz. `.env.example`.
 

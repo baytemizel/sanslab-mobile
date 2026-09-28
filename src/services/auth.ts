@@ -124,6 +124,17 @@ export function mapAuthError(e: any): AuthErrorCode {
   return "unknown";
 }
 
+/**
+ * Sosyal girişlerde (Google/Apple/Facebook) e-posta/şifre yoktur; Firebase'in
+ * `invalid-credential` hatası sağlayıcı token'ının doğrulanamadığını söyler
+ * (ör. Firebase'deki App ID/Secret yanlış). "E-posta veya şifre hatalı"
+ * göstermek yanıltıcı olacağı için genel hataya düşer.
+ */
+export function mapSocialAuthError(e: any): AuthErrorCode {
+  const mapped = mapAuthError(e);
+  return mapped === "wrong-password" ? "unknown" : mapped;
+}
+
 /* ------------------------------ Gözlem ------------------------------ */
 
 /**
@@ -239,7 +250,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
   } catch (e) {
     // DEVELOPER_ERROR (10) → Firebase'de bu imzanın SHA-1'i kayıtlı değil.
     if (__DEV__) console.warn("[auth] Google girişi başarısız:", e);
-    return { user: null, error: mapAuthError(e) };
+    return { user: null, error: mapSocialAuthError(e) };
   }
 }
 
@@ -276,7 +287,7 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
     return { user: toAuthUser(cred.user) };
   } catch (e) {
-    return { user: null, error: mapAuthError(e) };
+    return { user: null, error: mapSocialAuthError(e) };
   }
 }
 
@@ -336,7 +347,7 @@ export async function signInWithFacebook(): Promise<AuthResult> {
     return { user: toAuthUser(cred.user) };
   } catch (e) {
     if (__DEV__) console.warn("[auth] Facebook girişi başarısız:", e);
-    return { user: null, error: mapAuthError(e) };
+    return { user: null, error: mapSocialAuthError(e) };
   }
 }
 
