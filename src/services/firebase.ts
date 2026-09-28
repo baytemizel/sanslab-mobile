@@ -7,14 +7,30 @@
  * `google-services.json` / `GoogleService-Info.plist` yoksa app.config.ts
  * Firebase eklentilerini devre dışı bırakır ve buradaki her çağrı sessizce
  * atlanır; uygulama yine de normal çalışır.
+ *
+ * Modüller dosya başında import EDİLMEZ: crashlytics yüklenirken varsayılan
+ * Firebase uygulamasını arar ve yapılandırma yoksa fırlatır — bu, Firebase
+ * dosyası olmadan derlenen bir release'i açılışta çökertiyordu. Yalnızca
+ * `firebaseEnabled` iken tembel yüklenir.
  */
-
-import analytics from "@react-native-firebase/analytics";
-import crashlytics from "@react-native-firebase/crashlytics";
 
 import { firebaseEnabled } from "./env";
 
 let _ready = false;
+let _analytics: any = null;
+let _crashlytics: any = null;
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+function analytics(): any {
+  _analytics ??= require("@react-native-firebase/analytics").default;
+  return _analytics();
+}
+
+function crashlytics(): any {
+  _crashlytics ??= require("@react-native-firebase/crashlytics").default;
+  return _crashlytics();
+}
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 export function isFirebaseReady(): boolean {
   return _ready;

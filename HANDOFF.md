@@ -119,6 +119,16 @@ erişilemezse gönderim reddedilir.
 2. `GoogleService-Info.plist` ve `google-services.json` dosyalarını **proje
    köküne** koy. `app.config.ts` varlıklarını algılayıp eklentileri kendisi
    ekler — `app.json`'a elle referans YAZMA.
+   **EAS (bulut) derlemesi:** bu dosyalar `.gitignore`'da olduğu için EAS'e
+   yüklenmez. "file" türünde ortam değişkeni olarak ver (her ortam için):
+   ```bash
+   eas env:set --environment production --environment preview --environment development \
+     --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret
+   eas env:set --environment production --environment preview --environment development \
+     --name GOOGLE_SERVICE_INFO_PLIST --type file --value ./GoogleService-Info.plist --visibility secret
+   ```
+   Verilmezse production derlemesi `app.config.ts`'te açık bir hatayla durur
+   (önceden Firebase'siz release çıkıp açılışta çöküyordu).
 3. Authentication → Sign-in method: **Google**, **Facebook** ve (iOS için)
    **Apple** sağlayıcılarını aç. Giriş ekranında e-posta/şifre yoktur:
    Android'de Google + Facebook, iOS'ta Apple + Google + Facebook.

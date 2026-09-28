@@ -15,8 +15,16 @@ import path from "path";
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 const ROOT = __dirname;
-const ANDROID_GOOGLE_SERVICES = path.join(ROOT, "google-services.json");
-const IOS_GOOGLE_SERVICES = path.join(ROOT, "GoogleService-Info.plist");
+/**
+ * Firebase servis dosyaları gizlidir (.gitignore) ve EAS'e YÜKLENMEZ. EAS'te
+ * "file" türünde ortam değişkeni olarak verilir; değişken dosyanın derleme
+ * makinesindeki yolunu taşır (bkz. HANDOFF.md §5). Yerelde proje kökündeki
+ * dosyalar kullanılır.
+ */
+const ANDROID_GOOGLE_SERVICES =
+  process.env.GOOGLE_SERVICES_JSON || path.join(ROOT, "google-services.json");
+const IOS_GOOGLE_SERVICES =
+  process.env.GOOGLE_SERVICE_INFO_PLIST || path.join(ROOT, "GoogleService-Info.plist");
 
 const fileExists = fs.existsSync(ANDROID_GOOGLE_SERVICES);
 const hasIosFirebase = fs.existsSync(IOS_GOOGLE_SERVICES);
@@ -68,6 +76,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   const hasAndroidFirebase = fileExists && packageMatches;
   const hasFirebase = hasAndroidFirebase || hasIosFirebase;
+
+  /**
+   * EAS production derlemesi Firebase'siz ÇIKMAMALI: giriş, bulut yedeği,
+   * Analytics ve Crashlytics sessizce kapanır. Dosya EAS "file" ortam
+   * değişkeni olarak verilmemişse derleme burada, açık bir mesajla durur.
+   */
+  if (process.env.EAS_BUILD === "true" && process.env.EAS_BUILD_PROFILE === "production") {
+    const ios = process.env.EAS_BUILD_PLATFORM === "ios";
+    if (ios ? !hasIosFirebase : !hasAndroidFirebase) {
+      const name = ios ? "GOOGLE_SERVICE_INFO_PLIST" : "GOOGLE_SERVICES_JSON";
+      const file = ios ? "GoogleService-Info.plist" : "google-services.json";
+      throw new Error(
+        `[app.config] ${file} bu EAS derlemesinde yok. Firebase olmadan production ` +
+          `yayını yapılmaz. Dosyayı EAS'e yükle:\n` +
+          `  eas env:set --environment production --name ${name} ` +
+          `--type file --value ./${file} --visibility secret`
+      );
+    }
+  }
 
   const plugins = (base.plugins ?? []).filter(
     (p) => hasFirebase || !FIREBASE_PLUGINS.includes(pluginName(p))
@@ -136,13 +163,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     android: {
       ...base.android,
       googleServicesFile: hasAndroidFirebase
-        ? "./google-services.json"
+        ? ANDROID_GOOGLE_SERVICES
         : undefined,
     },
     ios: {
       ...base.ios,
       googleServicesFile: hasIosFirebase
-        ? "./GoogleService-Info.plist"
+        ? IOS_GOOGLE_SERVICES
         : undefined,
     },
     extra: {
