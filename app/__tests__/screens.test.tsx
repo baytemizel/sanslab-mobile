@@ -57,6 +57,7 @@ import { ONBOARDING_KEY } from "../../src/state/AppContext";
 /** jest.setup.js'teki sahte kurulum zamanı — bayrak bu değerle yazılır. */
 const INSTALL_STAMP = "1700000000000";
 import * as auth from "../../src/services/auth";
+import * as revenuecat from "../../src/services/revenuecat";
 import tr from "../../src/i18n/tr";
 
 beforeAll(async () => {
@@ -312,6 +313,89 @@ describe("Paywall", () => {
     fireEvent.press(plans[0]);
     expect(screen.getAllByRole("radio")[0].props.accessibilityState).toEqual({
       selected: true,
+    });
+  });
+
+  describe("mağaza bağlıyken satın alma akışı", () => {
+    const annual = {
+      identifier: "$rc_annual",
+      packageType: "ANNUAL",
+      product: { price: 4.9, priceString: "$4.90", pricePerMonthString: "$0.41" },
+    } as any;
+    const premiumInfo = { entitlements: { active: { premium: {} } } } as any;
+
+    beforeEach(() => {
+      jest.spyOn(revenuecat, "isPurchasesAvailable").mockReturnValue(true);
+    });
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    function offering(packages: any[]) {
+      return { identifier: "default", availablePackages: packages } as any;
+    }
+
+    it("açılışta RevenueCat'e paywall gösterimini bildirir", async () => {
+      jest.spyOn(revenuecat, "getOffering").mockResolvedValue(offering([annual]));
+      const track = jest.spyOn(revenuecat, "trackPaywallImpression").mockResolvedValue();
+      renderWithProviders(<Paywall />);
+      await settle();
+      expect(track).toHaveBeenCalledWith("default");
+    });
+
+    it("bekleyen ödemede bilgi mesajı gösterir, ekranı kapatmaz", async () => {
+      jest.spyOn(revenuecat, "getOffering").mockResolvedValue(offering([annual]));
+      jest
+        .spyOn(revenuecat, "purchase")
+        .mockResolvedValue({ info: null, cancelled: false, error: "pending" });
+      renderWithProviders(<Paywall />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.premium.cta));
+      await waitFor(() => expect(screen.getByText(tr.premium.paymentPending)).toBeTruthy());
+      expect(mockBack).not.toHaveBeenCalled();
+    });
+
+    it("abonelik zaten varsa sessizce geri yükleyip kapatır", async () => {
+      jest.spyOn(revenuecat, "getOffering").mockResolvedValue(offering([annual]));
+      jest
+        .spyOn(revenuecat, "purchase")
+        .mockResolvedValue({ info: null, cancelled: false, error: "alreadyOwned" });
+      const restoreSpy = jest.spyOn(revenuecat, "restore").mockResolvedValue(premiumInfo);
+      renderWithProviders(<Paywall />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.premium.cta));
+      await waitFor(() => expect(mockBack).toHaveBeenCalled());
+      expect(restoreSpy).toHaveBeenCalled();
+    });
+
+    it("iptalde mesaj göstermez", async () => {
+      jest.spyOn(revenuecat, "getOffering").mockResolvedValue(offering([annual]));
+      const buy = jest
+        .spyOn(revenuecat, "purchase")
+        .mockResolvedValue({ info: null, cancelled: true });
+      renderWithProviders(<Paywall />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.premium.cta));
+      await waitFor(() => expect(buy).toHaveBeenCalled());
+      await settle();
+      expect(screen.queryByText(tr.premium.purchaseFailed)).toBeNull();
+      expect(mockBack).not.toHaveBeenCalled();
+    });
+
+    it("paketler açılışta yüklenemediyse basınca yeniden dener", async () => {
+      const load = jest
+        .spyOn(revenuecat, "getOffering")
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      renderWithProviders(<Paywall />);
+      await settle();
+
+      fireEvent.press(screen.getByText(tr.premium.cta));
+      await waitFor(() => expect(screen.getByText(tr.premium.offeringFailed)).toBeTruthy());
+      expect(load).toHaveBeenCalledTimes(2);
     });
   });
 });

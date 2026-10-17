@@ -22,10 +22,15 @@ import { PrimaryButton } from "../src/components/Buttons";
 import Backdrop from "../src/components/Backdrop";
 import { useApp } from "../src/state/AppContext";
 import {
+  getCustomerInfo,
   getOffering,
   hasPremium,
+  isPurchasesAvailable,
+  managementUrl,
   purchase,
   restore,
+  trackPaywallImpression,
+  type PurchaseErrorKind,
 } from "../src/services/revenuecat";
 import { PREMIUM_BENEFIT_KEYS } from "../src/premium/gates";
 import {
@@ -45,6 +50,18 @@ type Plan = (typeof PLANS)[number];
 function packageFor(packages: PurchasesPackage[], plan: Plan): PurchasesPackage | null {
   return packages.find((p) => String(p.packageType) === plan) ?? null;
 }
+
+/** Satın alma hata türü → i18n anahtarı. */
+const ERROR_KEYS: Record<PurchaseErrorKind, string> = {
+  pending: "premium.paymentPending",
+  alreadyOwned: "premium.alreadyOwned",
+  network: "premium.networkError",
+  notAllowed: "premium.notAllowed",
+  unavailable: "premium.productUnavailable",
+  unknown: "premium.purchaseFailed",
+};
+
+type Message = { text: string; tone: "error" | "info" };
 
 const ORB = 56;
 const RING_COUNT = 3;
@@ -110,7 +127,8 @@ export default function Paywall() {
   const [selectedPlan, setSelectedPlan] = useState<Plan>("ANNUAL");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<Message | null>(null);
+  const showError = useCallback((key: string) => setMessage({ text: t(key), tone: "error" }), [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,11 +138,15 @@ export default function Paywall() {
       const pkgs = off?.availablePackages ?? [];
       setPackages(pkgs);
       setLoading(false);
-      logEvent("paywall_view", { packages: pkgs.length });
+      logEvent("paywall_view", { packages: pkgs.length, offering: off?.identifier ?? "none" });
+      // Premium kullanıcı satış ekranı değil "Premium etkin" görür → gösterim sayılmaz.
+      if (!isPremium) trackPaywallImpression(off?.identifier);
     })();
     return () => {
       cancelled = true;
     };
+    // Gösterim yalnızca açılışta bir kez sayılır.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Seçilen periyodun mağaza paketi (RevenueCat offering'inde yoksa null).
@@ -135,26 +157,66 @@ export default function Paywall() {
     else router.replace("/");
   }, [router]);
 
+  const succeed = useCallback(async () => {
+    await refreshPremium();
+    close();
+  }, [refreshPremium, close]);
+
   const doPurchase = useCallback(async () => {
-    // Buton hep aktif; mağaza paketi yoksa satın alma akışı açılamaz → kısa uyarı.
-    if (!selected) {
-      setMessage(t("premium.storeUnavailable"));
-      return;
+    let pkg = selected;
+    if (!pkg) {
+      // Buton hep aktif; bu derlemede mağaza yoksa satın alma akışı açılamaz → kısa uyarı.
+      if (!isPurchasesAvailable()) {
+        showError("premium.storeUnavailable");
+        return;
+      }
+      // Açılışta paketler yüklenemediyse (ör. bağlantı yoktu) bir kez daha dene.
+      setMessage(null);
+      setBusy(true);
+      const pkgs = (await getOffering())?.availablePackages ?? [];
+      setPackages(pkgs);
+      pkg = packageFor(pkgs, selectedPlan);
+      if (!pkg) {
+        setBusy(false);
+        showError("premium.offeringFailed");
+        return;
+      }
     }
     setMessage(null);
     setBusy(true);
-    const res = await purchase(selected);
-    setBusy(false);
+    logEvent("purchase_start", { package: pkg.identifier });
+    const res = await purchase(pkg);
 
-    if (res.cancelled) return;
-    if (res.info && hasPremium(res.info)) {
-      logEvent("purchase_success", { package: selected.identifier });
-      await refreshPremium();
-      close();
+    if (res.cancelled) {
+      setBusy(false);
+      logEvent("purchase_cancel", { package: pkg.identifier });
       return;
     }
-    setMessage(t("premium.purchaseFailed"));
-  }, [selected, refreshPremium, close, t]);
+    if (res.info && hasPremium(res.info)) {
+      setBusy(false);
+      logEvent("purchase_success", { package: pkg.identifier });
+      await succeed();
+      return;
+    }
+    // Abonelik bu mağaza hesabında zaten var: sessizce geri yükleyip bu hesaba bağla.
+    if (res.error === "alreadyOwned" && hasPremium(await restore())) {
+      setBusy(false);
+      logEvent("purchase_restored", { package: pkg.identifier });
+      await succeed();
+      return;
+    }
+    setBusy(false);
+
+    // Hata yoksa satın alma geçti ama "premium" entitlement'ı açılmadı (ürün bağlı değil).
+    const reason = res.error ?? "entitlement_missing";
+    logEvent("purchase_failed", { package: pkg.identifier, reason });
+    if (res.error === "pending") {
+      // Onaylanınca müşteri dinleyicisi Premium'u açar; ekran "Premium etkin"e döner.
+      setMessage({ text: t(ERROR_KEYS.pending), tone: "info" });
+      return;
+    }
+    showError(ERROR_KEYS[res.error ?? "unknown"]);
+  }, [selected, selectedPlan, succeed, showError, t]);
 
   const doRestore = useCallback(async () => {
     setMessage(null);
@@ -163,12 +225,15 @@ export default function Paywall() {
     setBusy(false);
 
     if (info && hasPremium(info)) {
-      await refreshPremium();
-      close();
+      await succeed();
       return;
     }
-    setMessage(t("premium.restoreNone"));
-  }, [refreshPremium, close, t]);
+    showError("premium.restoreNone");
+  }, [succeed, showError]);
+
+  const openManage = useCallback(async () => {
+    Linking.openURL(managementUrl(await getCustomerInfo())).catch(() => {});
+  }, []);
 
   // Her periyodun fiyatı: mağaza paketi varsa onun, yoksa liste fiyatı.
   const priceOf = (plan: Plan) =>
@@ -242,9 +307,16 @@ export default function Paywall() {
         </View>
 
         {isPremium ? (
-          <Text style={[styles.note, { color: theme.subText }]}>
-            {t("premium.manageNote")}
-          </Text>
+          <>
+            <Text style={[styles.note, { color: theme.subText }]}>
+              {t("premium.manageNote")}
+            </Text>
+            <Pressable onPress={openManage} accessibilityRole="link" style={styles.manage}>
+              <Text style={[styles.restoreText, { color: theme.gold }]}>
+                {t("premium.manage")}
+              </Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Text style={[styles.sectionLabel, { color: theme.subText }]}>
@@ -326,7 +398,14 @@ export default function Paywall() {
           </>
         )}
 
-        {message && <Text style={styles.message}>{message}</Text>}
+        {message && (
+          <Text
+            style={[styles.message, message.tone === "info" && { color: theme.subText }]}
+            accessibilityLiveRegion="polite"
+          >
+            {message.text}
+          </Text>
+        )}
 
         {!isPremium && (
           <View style={{ marginTop: 22 }}>
@@ -477,6 +556,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   restore: { alignItems: "center", paddingVertical: 16 },
+  manage: { alignItems: "center", paddingVertical: 4, marginTop: -12, marginBottom: 12 },
   restoreText: { fontSize: 14, fontFamily: fonts.bodySemi, fontWeight: "700" },
   legal: {
     fontSize: 11,

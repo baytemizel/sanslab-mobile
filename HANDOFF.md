@@ -180,6 +180,26 @@ yüzdesi rozeti hesaplanır.
 Giriş yapan kullanıcı için `Purchases.logIn(uid)` otomatik çağrılır → premium
 cihazlar arasında taşınır.
 
+**Paywall ekranı uygulamanın kendisidir** (`app/paywall.tsx`, animasyonlar
+dahil); RevenueCat panelinde Paywall tasarlamaya gerek yoktur. RevenueCat
+paketleri/fiyatları verir ve satın almayı yürütür. Ekran açıldığında
+`trackCustomPaywallImpression` (`sanslab_paywall`) çağrılır; gösterim ve
+dönüşüm panelde görünür.
+
+Satın alma sonuçları (`src/services/revenuecat.ts` → `purchaseErrorKind`):
+iptalde mesaj yok; **bekleyen ödemede** bilgi mesajı gösterilir ve onay gelince
+müşteri dinleyicisi Premium'u açar; **abonelik zaten varsa** sessizce geri
+yüklenir. Ağ hatası, izin yok ve paket satılamıyor durumları ayrı mesaj
+gösterir. Açılışta paketler yüklenemediyse butona basınca bir kez yeniden
+denenir. Premium kullanıcı "Aboneliği yönet" ile mağazanın abonelik sayfasına
+gider. Firebase olayları: `purchase_start` / `_success` / `_cancel` /
+`_restored` / `_failed` (`reason`).
+
+**Android'de test:** Play Console'da test hesabını *License testing*'e ekleyin.
+Uygulamayı internal testing kanalına yükleyin ve test hesabıyla kanala
+katılın. Satın almayı aynı paket adıyla (`com.oditteknoloji.sanslab`) kurulmuş
+bir derlemeden yapın.
+
 ---
 
 ## 7. AdMob + rıza (UMP)

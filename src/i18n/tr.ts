@@ -139,6 +139,7 @@ export default {
     activeSubtitle: "Tüm özellikler açık. Desteğin için teşekkürler.",
     manageNote:
       "Aboneliğini mağaza hesabının abonelikler bölümünden yönetebilir veya iptal edebilirsin.",
+    manage: "Aboneliği yönet",
     benefit1: "Reklamları tamamen kaldır",
     benefit2: "Tüm üretim modları: Dengeli · Az Paylaşılan · ŞansFormülü",
     benefit3: "Sınırsıza yakın kupon geçmişi ve favoriler",
@@ -148,6 +149,14 @@ export default {
     restored: "Premium geri yüklendi",
     restoreNone: "Geri yüklenecek bir satın alma bulunamadı",
     purchaseFailed: "Satın alma tamamlanamadı. Lütfen tekrar dene.",
+    paymentPending:
+      "Ödemen onay bekliyor. Onaylandığında Premium kendiliğinden açılır.",
+    alreadyOwned:
+      "Bu mağaza hesabında zaten bir abonelik var. Satın Alımları Geri Yükle'yi dene.",
+    networkError: "Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.",
+    notAllowed: "Bu cihazda satın alma izni yok (ör. ebeveyn denetimi).",
+    productUnavailable: "Bu paket şu an mağazada satın alınamıyor. Daha sonra tekrar dene.",
+    offeringFailed: "Mağaza paketleri yüklenemedi. Bağlantını kontrol edip tekrar dene.",
     noOffering: "Mağaza paketleri henüz yapılandırılmadı.",
     storeUnavailable:
       "Mağaza bağlantısı bu derlemede kullanılamıyor (TestFlight / Play derlemesi gerekir).",

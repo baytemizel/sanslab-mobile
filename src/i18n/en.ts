@@ -139,6 +139,7 @@ export default {
     activeSubtitle: "Everything is unlocked. Thanks for supporting the app.",
     manageNote:
       "You can manage or cancel your subscription in your store account's subscription settings.",
+    manage: "Manage subscription",
     benefit1: "Remove all ads",
     benefit2: "All modes: Balanced · Low Share · LuckFormula",
     benefit3: "Practically unlimited coupon history and favourites",
@@ -148,6 +149,14 @@ export default {
     restored: "Premium restored",
     restoreNone: "No purchase found to restore",
     purchaseFailed: "The purchase could not be completed. Please try again.",
+    paymentPending:
+      "Your payment is pending approval. Premium unlocks automatically once it's approved.",
+    alreadyOwned:
+      "This store account already has a subscription. Try Restore Purchases.",
+    networkError: "Couldn't connect. Check your internet connection and try again.",
+    notAllowed: "Purchases aren't allowed on this device (e.g. parental controls).",
+    productUnavailable: "This plan can't be purchased in the store right now. Please try again later.",
+    offeringFailed: "Couldn't load store plans. Check your connection and try again.",
     noOffering: "Store packages are not configured yet.",
     storeUnavailable:
       "The store is unavailable in this build (a TestFlight / Play build is required).",

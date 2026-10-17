@@ -75,8 +75,11 @@ jest.mock("react-native-purchases", () => ({
     logOut: jest.fn(async () => ({ entitlements: { active: {} } })),
     addCustomerInfoUpdateListener: jest.fn(),
     removeCustomerInfoUpdateListener: jest.fn(),
+    trackCustomPaywallImpression: jest.fn(async () => {}),
   },
   LOG_LEVEL: { DEBUG: "DEBUG" },
+  PURCHASES_ERROR_CODE: jest.requireActual("@revenuecat/purchases-typescript-internal")
+    .PURCHASES_ERROR_CODE,
 }));
 
 /* ------------------------------- AdMob ------------------------------- */

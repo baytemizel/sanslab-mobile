@@ -17,6 +17,9 @@ import {
   restore,
   unlinkUser,
   addCustomerInfoListener,
+  managementUrl,
+  purchaseErrorKind,
+  trackPaywallImpression,
   PREMIUM_ENTITLEMENT,
 } from "../revenuecat";
 import {
@@ -86,6 +89,26 @@ describe("RevenueCat — anahtarsız derleme", () => {
     await expect(restore()).resolves.toBeNull();
     await expect(linkUser("uid")).resolves.toBeNull();
     await expect(unlinkUser()).resolves.toBeNull();
+  });
+
+  it("paywall gösterimi bildirimi no-op, fırlatmaz", async () => {
+    await expect(trackPaywallImpression("default")).resolves.toBeUndefined();
+  });
+
+  it("satın alma hata kodlarını kullanıcı mesajı türüne çevirir", () => {
+    expect(purchaseErrorKind({ code: "20" })).toBe("pending");
+    expect(purchaseErrorKind({ code: "6" })).toBe("alreadyOwned");
+    expect(purchaseErrorKind({ code: "10" })).toBe("network");
+    expect(purchaseErrorKind({ code: "35" })).toBe("network");
+    expect(purchaseErrorKind({ code: "3" })).toBe("notAllowed");
+    expect(purchaseErrorKind({ code: "5" })).toBe("unavailable");
+    expect(purchaseErrorKind({ code: "999" })).toBe("unknown");
+    expect(purchaseErrorKind(null)).toBe("unknown");
+  });
+
+  it("abonelik yönetimi: RevenueCat adresi yoksa mağaza sayfasına düşer", () => {
+    expect(managementUrl({ managementURL: "https://x.test/m" } as any)).toBe("https://x.test/m");
+    expect(managementUrl(null)).toMatch(/^https:\/\/.+\/account\/subscriptions/);
   });
 
   it("dinleyici aboneliği no-op döner", () => {

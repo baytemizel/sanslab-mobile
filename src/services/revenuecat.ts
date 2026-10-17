@@ -2,7 +2,11 @@
  * RevenueCat entegrasyonu / RevenueCat integration
  *
  * Entitlement: "premium"
- * Offering   : "default" (aylık / yıllık / lifetime paketleri)
+ * Offering   : "default" ($rc_monthly / $rc_annual paketleri)
+ *
+ * Paywall ekranı uygulamanın kendisidir (`app/paywall.tsx`); RevenueCat'in
+ * hazır paywall'u kullanılmaz. RevenueCat burada paketleri/fiyatları verir,
+ * satın almayı yürütür ve gösterimleri `trackPaywallImpression` ile sayar.
  *
  * Anahtarlar `app.json -> extra.revenuecat` ya da ortam değişkenlerinden gelir
  * (bkz. app.config.ts). Anahtar hâlâ placeholder ise SDK BAŞLATILMAZ; tüm
@@ -14,12 +18,16 @@ import Purchases, {
   PurchasesOffering,
   PurchasesPackage,
   LOG_LEVEL,
+  PURCHASES_ERROR_CODE,
 } from "react-native-purchases";
 import { Platform } from "react-native";
 
 import { revenueCatKeys } from "./env";
 
 export const PREMIUM_ENTITLEMENT = "premium";
+
+/** RevenueCat panelindeki "custom paywall" gösterimlerinin kimliği. */
+export const PAYWALL_ID = "sanslab_paywall";
 
 let _configured = false;
 
@@ -86,11 +94,49 @@ export async function getOffering(): Promise<PurchasesOffering | null> {
   }
 }
 
+/**
+ * Kullanıcıya gösterilecek satın alma hatası türü.
+ * - `pending`: ödeme onay bekliyor (Play: nakit / yavaş kart); onaylanınca
+ *   müşteri dinleyicisi Premium'u kendiliğinden açar.
+ * - `alreadyOwned`: abonelik bu mağaza hesabında zaten var → geri yükleme.
+ * - `network`, `notAllowed`, `unavailable`: ayrı mesajlar.
+ */
+export type PurchaseErrorKind =
+  | "pending"
+  | "alreadyOwned"
+  | "network"
+  | "notAllowed"
+  | "unavailable"
+  | "unknown";
+
+/** RevenueCat hata koduna göre kullanıcıya gösterilecek hata türü. */
+export function purchaseErrorKind(e: unknown): PurchaseErrorKind {
+  switch ((e as { code?: string } | null)?.code) {
+    case PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR:
+      return "pending";
+    case PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR:
+    case PURCHASES_ERROR_CODE.RECEIPT_ALREADY_IN_USE_ERROR:
+      return "alreadyOwned";
+    case PURCHASES_ERROR_CODE.NETWORK_ERROR:
+    case PURCHASES_ERROR_CODE.OFFLINE_CONNECTION_ERROR:
+      return "network";
+    case PURCHASES_ERROR_CODE.PURCHASE_NOT_ALLOWED_ERROR:
+    case PURCHASES_ERROR_CODE.INSUFFICIENT_PERMISSIONS_ERROR:
+      return "notAllowed";
+    case PURCHASES_ERROR_CODE.PRODUCT_NOT_AVAILABLE_FOR_PURCHASE_ERROR:
+    case PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR:
+    case PURCHASES_ERROR_CODE.CONFIGURATION_ERROR:
+      return "unavailable";
+    default:
+      return "unknown";
+  }
+}
+
 export interface PurchaseResult {
   info: CustomerInfo | null;
   /** Kullanıcı iptal ettiyse hata gösterme. */
   cancelled: boolean;
-  error?: string;
+  error?: PurchaseErrorKind;
 }
 
 export async function purchase(
@@ -103,8 +149,35 @@ export async function purchase(
   } catch (e: any) {
     if (e?.userCancelled) return { info: null, cancelled: true };
     if (__DEV__) console.warn("[revenuecat] purchase error", e);
-    return { info: null, cancelled: false, error: String(e?.message ?? e) };
+    return { info: null, cancelled: false, error: purchaseErrorKind(e) };
   }
+}
+
+/**
+ * Paywall gösterimini RevenueCat'e bildirir (panelde dönüşüm oranı için).
+ * Analitik amaçlıdır; hata kullanıcıya yansımaz.
+ */
+export async function trackPaywallImpression(offeringId?: string): Promise<void> {
+  if (!_configured) return;
+  try {
+    await Purchases.trackCustomPaywallImpression({
+      paywallId: PAYWALL_ID,
+      offeringId: offeringId ?? null,
+    });
+  } catch (e) {
+    if (__DEV__) console.warn("[revenuecat] paywall impression failed:", e);
+  }
+}
+
+/**
+ * Aboneliği yönetme adresi: RevenueCat'in verdiği mağaza bağlantısı, yoksa
+ * platformun abonelikler sayfası.
+ */
+export function managementUrl(info: CustomerInfo | null): string {
+  if (info?.managementURL) return info.managementURL;
+  return Platform.OS === "ios"
+    ? "https://apps.apple.com/account/subscriptions"
+    : "https://play.google.com/store/account/subscriptions";
 }
 
 export async function restore(): Promise<CustomerInfo | null> {
