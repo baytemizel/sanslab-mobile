@@ -32,6 +32,7 @@ import {
 import type { Coupon } from "../games/generator";
 import {
   addToHistory,
+  clearHistory,
   countFavorites,
   loadHistory,
   prependToHistory,
@@ -168,8 +169,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(
     () =>
       observeUser((u) => {
+        const signedOut = Boolean(userRef.current) && !u;
         userRef.current = u;
         setUser(u);
+        // Çıkış: yepyeni bir misafir oturumu başlar. Cihazdaki geçmiş silinir;
+        // bulut yedeğine dokunulmaz (userRef artık boş, push yapılmaz) ve
+        // tekrar girişte geri gelir.
+        if (signedOut) {
+          historyRef.current = [];
+          setHistory([]);
+          clearHistory();
+        }
         // Hesap değişti: Premium bu hesaba göre yeniden çözülene kadar budama yok.
         if (u && hasPurchasesKey()) setPremiumKnown(false);
         // Premium'u hesaba bağla ki cihaz değişince taşınsın.
