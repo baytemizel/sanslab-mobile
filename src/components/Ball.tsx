@@ -10,6 +10,8 @@ interface Props {
   color: string;
   special?: boolean;
   size?: number;
+  /** Komşu toplarla arasındaki boşluk (sağ ve alt). */
+  gap?: number;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * Sol-üstten ışık alan, renkli halkalı, koyu zeminde hafif hâle bırakan küre.
  * special=true (Joker/Şans Topu) -> dolu renkli, daha güçlü ışıma.
  */
-export default function Ball({ value, color, special, size = 46 }: Props) {
+export default function Ball({ value, color, special, size = 46, gap = 9 }: Props) {
   const { theme } = useApp();
   const id = `${color}-${special ? "s" : "m"}`.replace(/[^a-zA-Z0-9]/g, "");
   const face = special ? color : theme.ballFace;
@@ -25,7 +27,7 @@ export default function Ball({ value, color, special, size = 46 }: Props) {
   const glow = theme.ballGlow;
 
   return (
-    <View style={[styles.wrap, { width: size, height: size }]}>
+    <View style={[styles.wrap, { width: size, height: size, marginRight: gap, marginBottom: gap }]}>
       {/* outer glow */}
       {glow > 0 && (
         <View
@@ -49,7 +51,7 @@ export default function Ball({ value, color, special, size = 46 }: Props) {
             <Stop offset="1" stopColor="#000000" stopOpacity={special ? 0.18 : 0} />
           </RadialGradient>
         </Defs>
-        <Circle cx={size / 2} cy={size / 2} r={size / 2 - 1.5} fill={face} stroke={color} strokeWidth={special ? 0 : 2.5} />
+        <Circle cx={size / 2} cy={size / 2} r={size / 2 - 1.5} fill={face} stroke={color} strokeWidth={special ? 0 : 1.5} />
         <Circle cx={size / 2} cy={size / 2} r={size / 2 - 1.5} fill={`url(#hl${id})`} />
       </Svg>
       <Text style={[styles.digit, { color: digit, fontSize: size * 0.4 }]}>
@@ -60,7 +62,7 @@ export default function Ball({ value, color, special, size = 46 }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: "center", justifyContent: "center", marginRight: 9, marginBottom: 9 },
+  wrap: { alignItems: "center", justifyContent: "center" },
   glow: { position: "absolute" },
   digit: { position: "absolute", fontFamily: fonts.ball, fontWeight: "800", letterSpacing: 0.5 },
 });

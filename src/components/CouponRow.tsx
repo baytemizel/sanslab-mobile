@@ -127,7 +127,8 @@ export default function CouponRow({
                   value={n}
                   color={color}
                   special={pool.id !== "main"}
-                  size={44}
+                  size={32}
+                  gap={0}
                 />
               ))}
             </View>
@@ -172,14 +173,21 @@ const styles = StyleSheet.create({
   },
   poolsWrap: { gap: 2 },
   poolRow: { marginTop: 2 },
-  divider: { height: 1, marginVertical: 12 },
+  divider: { height: 1, marginTop: 22, marginBottom: 22 },
   poolLabel: {
     fontSize: 10.5,
     fontFamily: fonts.bodyBold,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
-    marginBottom: 10,
+    marginBottom: 12,
+    textAlign: "center",
   },
-  balls: { flexDirection: "row", flexWrap: "wrap" },
+  balls: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    columnGap: 21,
+    rowGap: 14,
+  },
 });
