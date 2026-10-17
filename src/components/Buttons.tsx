@@ -13,6 +13,8 @@ interface BtnProps {
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
+  /** Yazı rengini zorlar (varsayılan: varyantın kendi rengi). */
+  labelColor?: string;
 }
 
 /** Birincil aksiyon. "gold" = altın gradyan (üret), "game" = oyun rengi gradyanı. */
@@ -24,6 +26,7 @@ export function PrimaryButton({
   loading,
   disabled,
   icon,
+  labelColor,
 }: BtnProps) {
   const { theme } = useApp();
 
@@ -47,19 +50,25 @@ export function PrimaryButton({
     variant === "gold"
       ? [palette.goldBright, palette.gold, palette.goldDeep]
       : [shade(color ?? theme.goldFill, 1.18), color ?? theme.goldFill, shade(color ?? theme.goldFill, 0.84)];
-  const onColor = variant === "gold" ? theme.onGold : "#fff";
+  const onColor = labelColor ?? (variant === "gold" ? theme.onGold : "#fff");
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [{ opacity: disabled ? 0.5 : pressed ? 0.9 : 1 }]}
+      style={({ pressed }) => [{ opacity: disabled ? 0.7 : pressed ? 0.9 : 1 }]}
     >
       <LinearGradient
         colors={grad as any}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.btn, styles.shadow, variant === "gold" && styles.goldShadow]}
+        // Pasifken gölge yok: Android'de yarı saydam butonun arkasındaki
+        // elevation gölgesi koyu bir blok olarak görünüyordu.
+        style={[
+          styles.btn,
+          !disabled && styles.shadow,
+          !disabled && variant === "gold" && styles.goldShadow,
+        ]}
       >
         {loading ? (
           <ActivityIndicator color={onColor} />

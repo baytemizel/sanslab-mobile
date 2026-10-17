@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   Pressable,
   ActivityIndicator,
   Linking,
+  AccessibilityInfo,
+  Animated,
+  Easing,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -21,24 +24,90 @@ import { useApp } from "../src/state/AppContext";
 import {
   getOffering,
   hasPremium,
-  isPurchasesAvailable,
   purchase,
   restore,
 } from "../src/services/revenuecat";
 import { PREMIUM_BENEFIT_KEYS } from "../src/premium/gates";
-import { defaultSelection, periodKey, savingsPercent } from "../src/premium/packages";
+import {
+  LIST_PRICES_USD,
+  formatUsd,
+  periodKey,
+  savingsPercent,
+} from "../src/premium/packages";
 import { logEvent } from "../src/services/firebase";
 import { links } from "../src/services/env";
 import { fonts, palette } from "../src/theme/colors";
 
+/** Sunulan ödeme periyotları: RevenueCat "default" offering'indeki $rc_monthly / $rc_annual. */
+const PLANS = ["MONTHLY", "ANNUAL"] as const;
+type Plan = (typeof PLANS)[number];
+
+function packageFor(packages: PurchasesPackage[], plan: Plan): PurchasesPackage | null {
+  return packages.find((p) => String(p.packageType) === plan) ?? null;
+}
+
+const ORB = 56;
+const RING_COUNT = 3;
+const RING_PERIOD = 2700;
+
+/** Topun çevresinden dışa yayılıp sönen ince altın halkalar (native sürücü). */
+function SignalRings() {
+  const rings = useMemo(
+    () => Array.from({ length: RING_COUNT }, () => new Animated.Value(0)),
+    []
+  );
+
+  useEffect(() => {
+    let reduce = false;
+    const loops = rings.map((v, i) =>
+      Animated.loop(
+        Animated.timing(v, {
+          toValue: 1,
+          duration: RING_PERIOD,
+          delay: (RING_PERIOD / RING_COUNT) * i,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        })
+      )
+    );
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((r) => (reduce = r))
+      .catch(() => {})
+      .finally(() => {
+        if (!reduce) loops.forEach((l) => l.start());
+      });
+    return () => loops.forEach((l) => l.stop());
+  }, [rings]);
+
+  return (
+    <>
+      {rings.map((v, i) => (
+        <Animated.View
+          key={i}
+          pointerEvents="none"
+          style={[
+            styles.ring,
+            {
+              opacity: v.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.45, 0] }),
+              transform: [
+                { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) },
+              ],
+            },
+          ]}
+        />
+      ))}
+    </>
+  );
+}
+
 export default function Paywall() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, refreshPremium, isPremium } = useApp();
   const insets = useSafeAreaInsets();
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
-  const [selected, setSelected] = useState<PurchasesPackage | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan>("ANNUAL");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -50,7 +119,6 @@ export default function Paywall() {
       if (cancelled) return;
       const pkgs = off?.availablePackages ?? [];
       setPackages(pkgs);
-      setSelected(defaultSelection(pkgs));
       setLoading(false);
       logEvent("paywall_view", { packages: pkgs.length });
     })();
@@ -58,6 +126,9 @@ export default function Paywall() {
       cancelled = true;
     };
   }, []);
+
+  // Seçilen periyodun mağaza paketi (RevenueCat offering'inde yoksa null).
+  const selected = packageFor(packages, selectedPlan);
 
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -95,10 +166,10 @@ export default function Paywall() {
     setMessage(t("premium.restoreNone"));
   }, [refreshPremium, close, t]);
 
-  const priced = packages.map((p) => ({
-    packageType: String(p.packageType),
-    price: p.product.price,
-  }));
+  // Her periyodun fiyatı: mağaza paketi varsa onun, yoksa liste fiyatı.
+  const priceOf = (plan: Plan) =>
+    packageFor(packages, plan)?.product.price ?? LIST_PRICES_USD[plan];
+  const priced = PLANS.map((plan) => ({ packageType: plan, price: priceOf(plan) }));
 
   return (
     <View style={styles.flex}>
@@ -124,20 +195,20 @@ export default function Paywall() {
           <Feather name="x" size={20} color={theme.text} />
         </Pressable>
 
-        {/* gold crown orb */}
+        {/* gold crown orb + dışa doğru yayılan sinyal halkaları */}
         <View style={styles.crownWrap}>
-          <View style={[styles.crownGlow, { backgroundColor: palette.gold }]} />
-          <Svg width={84} height={84}>
+          <SignalRings />
+          <Svg width={ORB} height={ORB}>
             <Defs>
               <RadialGradient id="crownG" cx="36%" cy="30%" r="80%">
                 <Stop offset="0" stopColor={palette.goldBright} stopOpacity={1} />
                 <Stop offset="1" stopColor={palette.goldDeep} stopOpacity={1} />
               </RadialGradient>
             </Defs>
-            <Circle cx={42} cy={42} r={40} fill="url(#crownG)" />
+            <Circle cx={ORB / 2} cy={ORB / 2} r={ORB / 2 - 1} fill="url(#crownG)" />
           </Svg>
           <View style={styles.crownStarCenter}>
-            <Feather name="star" size={34} color="#3A2A05" />
+            <Feather name="star" size={23} color="#3A2A05" />
           </View>
         </View>
 
@@ -170,93 +241,85 @@ export default function Paywall() {
           <Text style={[styles.note, { color: theme.subText }]}>
             {t("premium.manageNote")}
           </Text>
-        ) : loading ? (
-          <ActivityIndicator color={theme.gold} style={{ marginVertical: 30 }} />
-        ) : packages.length === 0 ? (
-          <Text style={[styles.note, { color: theme.subText }]}>
-            {isPurchasesAvailable()
-              ? t("premium.noOffering")
-              : t("premium.storeUnavailable")}
-          </Text>
         ) : (
-          <View style={{ gap: 12, marginTop: 4 }}>
-            {packages.map((p) => {
-              const active = selected?.identifier === p.identifier;
-              const saving = savingsPercent(
-                { packageType: String(p.packageType), price: p.product.price },
-                priced
-              );
-              return (
-                <Pressable
-                  key={p.identifier}
-                  onPress={() => setSelected(p)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  style={[
-                    styles.pkg,
-                    {
-                      borderColor: active ? theme.goldFill : theme.border,
-                      backgroundColor: active
-                        ? theme.dark
-                          ? "rgba(244,192,74,0.08)"
-                          : "#FFFBF0"
-                        : theme.card,
-                      borderWidth: active ? 2 : 1,
-                    },
-                  ]}
-                >
-                  <View style={styles.radio}>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        { borderColor: active ? theme.goldFill : theme.border },
-                      ]}
-                    >
-                      {active && (
-                        <View
-                          style={[
-                            styles.radioInner,
-                            { backgroundColor: theme.goldFill },
-                          ]}
-                        />
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={styles.pkgTitleRow}>
-                        <Text style={[styles.pkgTitle, { color: theme.text }]}>
-                          {t(periodKey(String(p.packageType)))}
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.subText }]}>
+              {t("premium.billingPeriod")}
+            </Text>
+            <View style={styles.plans}>
+              {PLANS.map((plan) => {
+                const pkg = packageFor(packages, plan);
+                const active = selectedPlan === plan;
+                const saving = savingsPercent({ packageType: plan, price: priceOf(plan) }, priced);
+                const priceString = pkg?.product.priceString ?? formatUsd(priceOf(plan), i18n.language);
+                const hint =
+                  plan === "ANNUAL"
+                    ? t("premium.perMonth", {
+                        price:
+                          pkg?.product.pricePerMonthString ??
+                          formatUsd(priceOf(plan) / 12, i18n.language),
+                      })
+                    : t("premium.monthlyHint");
+                return (
+                  <Pressable
+                    key={plan}
+                    onPress={() => setSelectedPlan(plan)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    style={[
+                      styles.plan,
+                      {
+                        borderColor: active ? theme.goldFill : theme.border,
+                        backgroundColor: active
+                          ? theme.dark
+                            ? "rgba(244,192,74,0.12)"
+                            : "#FFF6E2"
+                          : theme.card,
+                      },
+                    ]}
+                  >
+                    {saving !== null && (
+                      <View style={[styles.saveBadge, { backgroundColor: theme.goldFill }]}>
+                        <Text style={[styles.saveText, { color: theme.onGold }]}>
+                          {t("premium.save", { n: saving })}
                         </Text>
-                        {saving !== null && (
-                          <View
-                            style={[styles.saveBadge, { backgroundColor: theme.goldFill }]}
-                          >
-                            <Text style={[styles.saveText, { color: theme.onGold }]}>
-                              {t("premium.save", { n: saving })}
-                            </Text>
-                          </View>
+                      </View>
+                    )}
+                    <View style={styles.planHead}>
+                      <Text style={[styles.planTitle, { color: theme.text }]}>
+                        {t(periodKey(plan))}
+                      </Text>
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          { borderColor: active ? theme.goldFill : theme.border },
+                        ]}
+                      >
+                        {active && (
+                          <View style={[styles.radioInner, { backgroundColor: theme.goldFill }]} />
                         )}
                       </View>
-                      {p.product.introPrice ? (
-                        <Text style={[styles.pkgPeriod, { color: theme.gold }]}>
-                          {t("premium.trial", {
-                            period: p.product.introPrice.periodNumberOfUnits,
-                            unit: p.product.introPrice.periodUnit,
-                          })}
-                        </Text>
-                      ) : (
-                        <Text style={[styles.pkgPeriod, { color: theme.subText }]}>
-                          {p.product.description || p.product.title}
-                        </Text>
-                      )}
                     </View>
-                  </View>
-                  <Text style={[styles.pkgPrice, { color: theme.gold }]}>
-                    {p.product.priceString}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                    {loading ? (
+                      <ActivityIndicator color={theme.gold} style={styles.planLoading} />
+                    ) : (
+                      <Text style={[styles.planPrice, { color: active ? theme.gold : theme.text }]}>
+                        {priceString}
+                      </Text>
+                    )}
+                    <Text style={[styles.planHint, { color: theme.subText }]} numberOfLines={2}>
+                      {pkg?.product.introPrice
+                        ? t("premium.trial", {
+                            period: pkg.product.introPrice.periodNumberOfUnits,
+                            unit: pkg.product.introPrice.periodUnit,
+                          })
+                        : hint}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
         )}
 
         {message && <Text style={styles.message}>{message}</Text>}
@@ -269,6 +332,7 @@ export default function Paywall() {
               loading={busy}
               disabled={!selected || busy}
               variant="gold"
+              labelColor="#fff"
             />
             <Pressable onPress={doRestore} disabled={busy} style={styles.restore}>
               <Text style={[styles.restoreText, { color: theme.subText }]}>
@@ -312,20 +376,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   crownWrap: {
-    width: 84,
-    height: 84,
+    width: ORB,
+    height: ORB,
     alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
-    marginBottom: 18,
+    // halkalar topun 2.2 katına kadar yayılır
+    marginTop: 30,
+    marginBottom: 26,
   },
-  crownGlow: {
+  ring: {
     position: "absolute",
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    opacity: 0.4,
+    width: ORB,
+    height: ORB,
+    borderRadius: ORB / 2,
+    borderWidth: 1,
+    borderColor: palette.gold,
   },
   crownStarCenter: {
     ...StyleSheet.absoluteFillObject,
@@ -340,12 +406,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   // "Premium" markası serif italik; fontWeight verilmez (Android'de sistem fontuna düşer).
-  premiumTitle: { fontFamily: fonts.premium, fontWeight: "normal", fontSize: 34, letterSpacing: 0.3 },
+  premiumTitle: { fontFamily: fonts.premium, fontWeight: "normal", fontSize: 26, letterSpacing: 0.3 },
   subtitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: fonts.body,
     textAlign: "center",
-    marginTop: 8,
+    opacity: 0.7,
+    marginTop: 2,
     marginBottom: 26,
   },
   benefits: { gap: 16, marginBottom: 24, borderRadius: 22, borderWidth: 1, padding: 20 },
@@ -357,31 +424,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  benefitText: { fontSize: 15, fontFamily: fonts.bodyMed, fontWeight: "600", flex: 1 },
-  pkg: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+  benefitText: { fontSize: 13.5, fontFamily: fonts.bodyMed, fontWeight: "600", flex: 1 },
+  sectionLabel: {
+    fontSize: 11.5,
+    fontFamily: fonts.bodyBold,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    opacity: 0.75,
+    marginBottom: 10,
   },
-  radio: { flexDirection: "row", alignItems: "center", gap: 13, flex: 1 },
+  plans: { flexDirection: "row", gap: 12 },
+  plan: { flex: 1, borderRadius: 18, borderWidth: 1.5, padding: 16, paddingTop: 18 },
+  planHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  planTitle: { fontSize: 16, fontFamily: fonts.display },
   radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  radioInner: { width: 11, height: 11, borderRadius: 6 },
-  pkgTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  pkgTitle: { fontSize: 16, fontFamily: fonts.display, fontWeight: "800" },
-  saveBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  saveText: { fontSize: 10.5, fontFamily: fonts.bodyBold, fontWeight: "800" },
-  pkgPeriod: { fontSize: 12, fontFamily: fonts.body, marginTop: 3 },
-  pkgPrice: { fontSize: 19, fontFamily: fonts.displayHeavy, fontWeight: "900" },
+  radioInner: { width: 10, height: 10, borderRadius: 5 },
+  saveBadge: {
+    position: "absolute",
+    top: -10,
+    right: 12,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  saveText: { fontSize: 10.5, fontFamily: fonts.bodyBold },
+  planPrice: { fontSize: 20, fontFamily: fonts.displayHeavy, marginTop: 12 },
+  planLoading: { alignSelf: "flex-start", marginTop: 14, height: 24 },
+  planHint: { fontSize: 11.5, fontFamily: fonts.body, marginTop: 4, lineHeight: 16 },
   note: {
     fontSize: 13,
     fontFamily: fonts.body,

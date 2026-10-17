@@ -86,3 +86,19 @@ export function defaultSelection<T extends { packageType: string }>(
     .sort((a, b) => b.m - a.m);
   return withMonths[0]?.p ?? packages[0];
 }
+
+/**
+ * Liste fiyatları (USD). Mağaza paketi yüklenemediğinde paywall'da gösterilir;
+ * mağaza bağlıyken HER ZAMAN mağazanın yerelleştirilmiş fiyatı kullanılır.
+ * Mağazadaki (App Store Connect / Play Console) ürün fiyatlarıyla aynı tutulmalı.
+ */
+export const LIST_PRICES_USD = { MONTHLY: 0.49, ANNUAL: 4.9 } as const;
+
+/** USD tutarını dile göre biçimlendirir: tr → "$0,49", en → "$0.49". */
+export function formatUsd(amount: number, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(amount);
+  } catch {
+    return `$${amount.toFixed(2)}`;
+  }
+}

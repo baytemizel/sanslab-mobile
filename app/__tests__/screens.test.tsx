@@ -287,12 +287,28 @@ describe("Paywall", () => {
     expect(screen.getByText(tr.settings.privacy)).toBeTruthy();
   });
 
-  it("paket yoksa mağaza-kullanılamıyor mesajı verir (boş liste değil)", async () => {
+  it("paket yoksa uyarı metni göstermez, periyot kartlarını korur", async () => {
     renderWithProviders(<Paywall />);
     await settle();
-    await waitFor(() =>
-      expect(screen.getByText(tr.premium.storeUnavailable)).toBeTruthy()
-    );
+    expect(screen.queryByText(tr.premium.storeUnavailable)).toBeNull();
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+  });
+
+  it("aylık ve yıllık periyot seçimini gösterir; varsayılan yıllık", async () => {
+    renderWithProviders(<Paywall />);
+    await settle();
+
+    expect(screen.getByText(tr.premium.billingPeriod)).toBeTruthy();
+    const plans = screen.getAllByRole("radio");
+    expect(plans).toHaveLength(2);
+    expect(screen.getByText(tr.premium.monthly)).toBeTruthy();
+    expect(screen.getByText(tr.premium.yearly)).toBeTruthy();
+    expect(plans[1].props.accessibilityState).toEqual({ selected: true });
+
+    fireEvent.press(plans[0]);
+    expect(screen.getAllByRole("radio")[0].props.accessibilityState).toEqual({
+      selected: true,
+    });
   });
 });
 
