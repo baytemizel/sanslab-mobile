@@ -113,10 +113,10 @@ export default function StatsScreen() {
         </View>
 
         {/* hot / cold balls */}
-        <Text style={[styles.label, { color: theme.subText, marginTop: 22 }]}>{t("statistics.hot")}</Text>
-        <View style={styles.balls}>{stats.hot.map((n) => <Ball key={`h${n}`} value={n} color={color} size={42} />)}</View>
-        <Text style={[styles.label, { color: theme.subText, marginTop: 16 }]}>{t("statistics.cold")}</Text>
-        <View style={styles.balls}>{stats.cold.map((n) => <Ball key={`c${n}`} value={n} color={color} size={42} />)}</View>
+        <Text style={[styles.label, styles.centered, { color: theme.subText, marginTop: 22, marginBottom: 16 }]}>{t("statistics.hot")}</Text>
+        <View style={styles.balls}>{stats.hot.map((n) => <Ball key={`h${n}`} value={n} color={color} size={42} gap={0} />)}</View>
+        <Text style={[styles.label, styles.centered, { color: theme.subText, marginTop: 24, marginBottom: 16 }]}>{t("statistics.cold")}</Text>
+        <View style={styles.balls}>{stats.cold.map((n) => <Ball key={`c${n}`} value={n} color={color} size={42} gap={0} />)}</View>
 
         {/* fairness verdict */}
         <View style={[styles.verdict, { borderColor: stats.verdict === "fair" ? theme.gold : theme.border, backgroundColor: theme.card }]}>
@@ -155,12 +155,13 @@ const styles = StyleSheet.create({
   discText: { flex: 1, fontSize: 12, fontFamily: fonts.body, lineHeight: 17 },
   label: { fontSize: 12, fontFamily: fonts.bodyBold, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 },
   chartWrap: { borderWidth: 1, borderRadius: 18, padding: 12 },
-  legendRow: { flexDirection: "row", gap: 18, marginTop: 12 },
+  legendRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 18, marginTop: 12 },
   legend: { flexDirection: "row", alignItems: "center", gap: 6 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   dash: { width: 14, height: 3, borderRadius: 2 },
   legendText: { fontSize: 11.5, fontFamily: fonts.body },
-  balls: { flexDirection: "row", flexWrap: "wrap" },
+  centered: { textAlign: "center" },
+  balls: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: 18, rowGap: 12 },
   verdict: { flexDirection: "row", gap: 13, alignItems: "flex-start", borderWidth: 1.5, borderRadius: 20, padding: 16, marginTop: 24 },
   verdictIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   verdictTitle: { fontSize: 16, fontFamily: fonts.display, fontWeight: "800" },
