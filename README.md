@@ -291,6 +291,6 @@ kuponlar yalnızca cihazda saklanır, sunucuya gönderilmez.
 
 <div align="center">
 
-**support@odit.com.tr** · com.oditteknoloji.sanslab
+**support@oditteknoloji.com** · com.oditteknoloji.sanslab
 
 </div>

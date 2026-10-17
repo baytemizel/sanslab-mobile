@@ -25,7 +25,7 @@ Uygulama 18 yaş altı için tasarlanmamıştır.
 Cihaz ayarlarından reklam kimliğini sıfırlayabilir, uygulamayı kaldırarak yerel verileri silebilirsiniz.
 
 ### İletişim
-privacy@odit.com.tr
+support@oditteknoloji.com
 
 ---
 
@@ -50,4 +50,4 @@ The App is not intended for anyone under 18.
 You can reset your advertising identifier in device settings and delete local data by uninstalling the App.
 
 ### Contact
-privacy@odit.com.tr
+support@oditteknoloji.com

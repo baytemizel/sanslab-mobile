@@ -264,7 +264,7 @@ eas submit  --profile production --platform android
   oluşturuluyorsa e-posta + ad.
 - **Hesap silme:** Uygulama içi akış **mevcut** (Ayarlar → Hesap → Hesabımı
   sil). Play formunda uygulama içi akışı işaretle; ayrıca web URL'si istenirse
-  `support@odit.com.tr` üzerinden manuel süreç tanımla.
+  `support@oditteknoloji.com` üzerinden manuel süreç tanımla.
 - **İçerik derecelendirmesi:** 17+/18+ — "Simulated Gambling".
 - **İnceleme notu:** *"App only generates random numbers for entertainment.
   No real-money gambling, no betting, no ticket purchase. Not affiliated with
@@ -325,4 +325,4 @@ otomatik doğrulanır — testleri kırmadan kaldıramazsın, bu kasıtlıdır.
 
 ---
 
-İletişim: support@odit.com.tr · © 2026 Odit Teknoloji
+İletişim: support@oditteknoloji.com · © 2026 Odit Teknoloji

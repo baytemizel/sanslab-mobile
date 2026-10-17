@@ -54,9 +54,9 @@ export const authConfig = {
 export const firebaseEnabled: boolean = extra.firebaseEnabled === true;
 
 export const links = {
-  privacy: (extra.links?.privacy as string) ?? "https://odit.com.tr/sanslab/privacy",
-  terms: (extra.links?.terms as string) ?? "https://odit.com.tr/sanslab/terms",
-  support: (extra.links?.support as string) ?? "mailto:support@odit.com.tr",
+  privacy: (extra.links?.privacy as string) ?? "https://sanslab.oditteknoloji.com/privacy",
+  terms: (extra.links?.terms as string) ?? "https://sanslab.oditteknoloji.com/terms",
+  support: (extra.links?.support as string) ?? "mailto:support@oditteknoloji.com",
 };
 
 export const appVersion = Constants.expoConfig?.version ?? "1.0.0";

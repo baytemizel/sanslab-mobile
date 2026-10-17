@@ -25,7 +25,7 @@ Premium abonelik mağaza üzerinden faturalandırılır ve mağaza kurallarına 
 Uygulama "olduğu gibi" sunulur. Oyun kararlarınızdan ve olası kayıplarınızdan Odit Teknoloji sorumlu değildir. Sorumlu oyun için: Yeşilay 115.
 
 ### 7. İletişim
-support@odit.com.tr
+support@oditteknoloji.com
 
 ---
 
@@ -50,4 +50,4 @@ Premium is billed through the store and subject to its rules. Cancellations and 
 The App is provided "as is". Odit Teknoloji is not responsible for your gaming decisions or any losses. Play responsibly.
 
 ### 7. Contact
-support@odit.com.tr
+support@oditteknoloji.com
