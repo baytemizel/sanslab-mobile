@@ -136,7 +136,11 @@ export default function Paywall() {
   }, [router]);
 
   const doPurchase = useCallback(async () => {
-    if (!selected) return;
+    // Buton hep aktif; mağaza paketi yoksa satın alma akışı açılamaz → kısa uyarı.
+    if (!selected) {
+      setMessage(t("premium.storeUnavailable"));
+      return;
+    }
     setMessage(null);
     setBusy(true);
     const res = await purchase(selected);
@@ -330,7 +334,7 @@ export default function Paywall() {
               label={t("premium.cta")}
               onPress={doPurchase}
               loading={busy}
-              disabled={!selected || busy}
+              disabled={busy}
               variant="gold"
               labelColor="#fff"
             />

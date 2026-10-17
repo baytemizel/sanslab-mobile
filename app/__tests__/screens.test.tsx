@@ -292,6 +292,10 @@ describe("Paywall", () => {
     await settle();
     expect(screen.queryByText(tr.premium.storeUnavailable)).toBeNull();
     expect(screen.getAllByRole("radio")).toHaveLength(2);
+
+    // Buton yine de aktif: basınca mağaza uyarısı çıkar.
+    fireEvent.press(screen.getByText(tr.premium.cta));
+    expect(screen.getByText(tr.premium.storeUnavailable)).toBeTruthy();
   });
 
   it("aylık ve yıllık periyot seçimini gösterir; varsayılan yıllık", async () => {
