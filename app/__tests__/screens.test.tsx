@@ -397,6 +397,82 @@ describe("Paywall", () => {
       await waitFor(() => expect(screen.getByText(tr.premium.offeringFailed)).toBeTruthy());
       expect(load).toHaveBeenCalledTimes(2);
     });
+
+    describe("misafir kullanıcı (giriş bu derlemede açık)", () => {
+      const fbUser = {
+        uid: "u1",
+        email: "a@b.co",
+        displayName: "Test",
+        photoURL: null,
+        emailVerified: true,
+        providers: ["facebook.com"],
+      };
+
+      beforeEach(() => {
+        jest.spyOn(auth, "isAuthAvailable").mockReturnValue(true);
+        jest.spyOn(revenuecat, "getOffering").mockResolvedValue(offering([annual]));
+      });
+
+      it("satın almaya basınca giriş sayfasını açar, ödeme başlatmaz", async () => {
+        const buy = jest.spyOn(revenuecat, "purchase");
+        renderWithProviders(<Paywall />);
+        await settle();
+
+        fireEvent.press(screen.getByText(tr.premium.cta));
+        await waitFor(() => expect(screen.getByText(tr.premium.signInTitle)).toBeTruthy());
+        expect(screen.getByText(tr.premium.signInBody)).toBeTruthy();
+        expect(screen.getByText(tr.auth.google)).toBeTruthy();
+        expect(screen.getByText(tr.auth.facebook)).toBeTruthy();
+        expect(buy).not.toHaveBeenCalled();
+      });
+
+      it("girişten sonra hesabı bağlayıp satın almaya devam eder", async () => {
+        jest.spyOn(auth, "signInWithFacebook").mockResolvedValue({ user: fbUser });
+        const link = jest
+          .spyOn(revenuecat, "linkUser")
+          .mockResolvedValue({ entitlements: { active: {} } } as any);
+        const buy = jest
+          .spyOn(revenuecat, "purchase")
+          .mockResolvedValue({ info: null, cancelled: true });
+        renderWithProviders(<Paywall />);
+        await settle();
+
+        fireEvent.press(screen.getByText(tr.premium.cta));
+        await waitFor(() => expect(screen.getByText(tr.auth.facebook)).toBeTruthy());
+        fireEvent.press(screen.getByText(tr.auth.facebook));
+
+        await waitFor(() => expect(buy).toHaveBeenCalledWith(annual));
+        expect(link).toHaveBeenCalledWith("u1");
+      });
+
+      it("hesapta zaten Premium varsa tekrar ödetmeden kapatır", async () => {
+        jest.spyOn(auth, "signInWithFacebook").mockResolvedValue({ user: fbUser });
+        jest.spyOn(revenuecat, "linkUser").mockResolvedValue(premiumInfo);
+        const buy = jest.spyOn(revenuecat, "purchase");
+        renderWithProviders(<Paywall />);
+        await settle();
+
+        fireEvent.press(screen.getByText(tr.premium.cta));
+        await waitFor(() => expect(screen.getByText(tr.auth.facebook)).toBeTruthy());
+        fireEvent.press(screen.getByText(tr.auth.facebook));
+
+        await waitFor(() => expect(mockBack).toHaveBeenCalled());
+        expect(buy).not.toHaveBeenCalled();
+      });
+
+      it("Vazgeç ödeme başlatmaz", async () => {
+        const buy = jest.spyOn(revenuecat, "purchase");
+        renderWithProviders(<Paywall />);
+        await settle();
+
+        fireEvent.press(screen.getByText(tr.premium.cta));
+        await waitFor(() => expect(screen.getByText(tr.common.cancel)).toBeTruthy());
+        // Sayfa kapanış animasyonu bitince kaldırılır; testte yalnızca etki kontrol edilir.
+        fireEvent.press(screen.getByText(tr.common.cancel));
+        await settle();
+        expect(buy).not.toHaveBeenCalled();
+      });
+    });
   });
 });
 

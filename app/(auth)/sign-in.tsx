@@ -1,54 +1,13 @@
-import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Platform,
-} from "react-native";
+import React, { useCallback } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
-import SocialButton, { type SocialProvider } from "../../src/components/SocialButton";
+import SocialSignInButtons, { canSignIn } from "../../src/components/SocialSignInButtons";
 import { useApp } from "../../src/state/AppContext";
-import {
-  isAppleAuthAvailable,
-  isAuthAvailable,
-  isFacebookAuthAvailable,
-  isGoogleAuthAvailable,
-  signInWithApple,
-  signInWithFacebook,
-  signInWithGoogle,
-  type AuthErrorCode,
-  type AuthResult,
-} from "../../src/services/auth";
-import { logEvent } from "../../src/services/firebase";
 import { fonts } from "../../src/theme/colors";
-
-/** Platforma göre giriş seçenekleri, üstten alta bu sırayla. */
-const IOS_PROVIDERS: SocialProvider[] = ["apple", "google", "facebook"];
-const ANDROID_PROVIDERS: SocialProvider[] = ["google", "facebook"];
-
-const SIGN_IN: Record<SocialProvider, () => Promise<AuthResult>> = {
-  apple: () => signInWithApple(),
-  google: () => signInWithGoogle(),
-  facebook: () => signInWithFacebook(),
-};
-
-const CONFIGURED: Record<SocialProvider, () => boolean> = {
-  apple: isAppleAuthAvailable,
-  google: isGoogleAuthAvailable,
-  facebook: isFacebookAuthAvailable,
-};
-
-const LABEL: Record<SocialProvider, string> = {
-  apple: "auth.apple",
-  google: "auth.google",
-  facebook: "auth.facebook",
-};
 
 export default function SignIn() {
   const { t } = useTranslation();
@@ -56,15 +15,7 @@ export default function SignIn() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [busy, setBusy] = useState<SocialProvider | null>(null);
-  const [error, setError] = useState<AuthErrorCode | null>(null);
-
-  // Yayın derlemesinde anahtarı girilmemiş sağlayıcı gizlenir; geliştirmede
-  // tasarım görülebilsin diye gösterilir (dokununca "kullanılamıyor" der).
-  const providers = (
-    Platform.OS === "ios" ? IOS_PROVIDERS : ANDROID_PROVIDERS
-  ).filter((p) => __DEV__ || CONFIGURED[p]());
-  const available = isAuthAvailable() && providers.length > 0;
+  const available = canSignIn();
 
   /**
    * Ayarlar/Hesap'tan açıldıysa: giriş başarılıysa ana ekrana dönülür; misafir
@@ -83,22 +34,6 @@ export default function SignIn() {
       router.replace("/");
     },
     [onboarded, completeOnboarding, router]
-  );
-
-  const signIn = useCallback(
-    async (provider: SocialProvider) => {
-      setError(null);
-      setBusy(provider);
-      const res = await SIGN_IN[provider]();
-      setBusy(null);
-      if (res.user) {
-        logEvent("login", { method: provider });
-        await leave(true);
-      } else if (res.error && res.error !== "cancelled") {
-        setError(res.error);
-      }
-    },
-    [leave]
   );
 
   return (
@@ -145,21 +80,7 @@ export default function SignIn() {
             </Text>
           </View>
         ) : (
-          <>
-            {error && (
-              <Text style={styles.error}>{t(`auth.error.${error}`)}</Text>
-            )}
-            {providers.map((p) => (
-              <SocialButton
-                key={p}
-                provider={p}
-                label={t(LABEL[p])}
-                onPress={() => signIn(p)}
-                loading={busy === p}
-                disabled={busy !== null}
-              />
-            ))}
-          </>
+          <SocialSignInButtons onSignedIn={() => leave(true)} />
         )}
 
         {/* Giriş her zaman opsiyonel — mağaza politikası ve UX gereği. */}
@@ -213,13 +134,6 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   noticeText: { flex: 1, fontSize: 13, fontFamily: fonts.body, lineHeight: 19 },
-  error: {
-    color: "#F5333B",
-    fontSize: 13,
-    fontFamily: fonts.bodyMed,
-    marginBottom: 4,
-    textAlign: "center",
-  },
   guest: { alignItems: "center", paddingTop: 12, paddingBottom: 10 },
   guestText: {
     fontSize: 13.5,

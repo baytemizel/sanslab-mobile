@@ -195,6 +195,15 @@ denenir. Premium kullanıcı "Aboneliği yönet" ile mağazanın abonelik sayfas
 gider. Firebase olayları: `purchase_start` / `_success` / `_cancel` /
 `_restored` / `_failed` (`reason`).
 
+**Misafir satın alamaz:** giriş açık bir derlemede misafir "Premium'a Geç"e
+basınca alt sayfa (`src/components/SignInSheet.tsx`) sosyal giriş butonlarını
+gösterir. Girişten sonra RevenueCat kimliği hesaba bağlanır
+(`Purchases.logIn`). Hesapta zaten Premium varsa ödeme açılmadan ekran kapanır,
+yoksa satın alma kaldığı yerden devam eder. Firebase olmayan derlemede bu adım
+atlanır (aksi halde Premium hiç alınamazdı). ⚠️ App Store, hesaba bağlı
+olmayan IAP için zorunlu girişi Guideline 5.1.1(v) gerekçesiyle
+reddedebilir — iOS yayınından önce gözden geçirin.
+
 **Android'de test:** Play Console'da test hesabını *License testing*'e ekleyin.
 Uygulamayı internal testing kanalına yükleyin ve test hesabıyla kanala
 katılın. Satın almayı aynı paket adıyla (`com.oditteknoloji.sanslab`) kurulmuş

@@ -180,6 +180,9 @@ export default {
     unlockRows: "That number of rows is a Premium feature",
     unlockMode: "This mode is a Premium feature",
     unlockExport: "Exporting your history is a Premium feature",
+    signInTitle: "Sign in before you buy",
+    signInBody:
+      "Premium is tied to your account, so you keep it even if you switch phones or reinstall the app.",
     maybeLater: "Maybe later",
   },
   auth: {

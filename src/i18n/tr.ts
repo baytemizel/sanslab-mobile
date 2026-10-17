@@ -180,6 +180,9 @@ export default {
     unlockRows: "Bu satır sayısı Premium özelliğidir",
     unlockMode: "Bu mod Premium özelliğidir",
     unlockExport: "Geçmişi dışa aktarma Premium özelliğidir",
+    signInTitle: "Satın almadan önce giriş yap",
+    signInBody:
+      "Premium hesabına bağlanır; telefonunu değiştirsen ya da uygulamayı yeniden yüklesen de kaybolmaz.",
     maybeLater: "Belki sonra",
   },
   auth: {

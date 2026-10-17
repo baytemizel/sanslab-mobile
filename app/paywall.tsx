@@ -20,12 +20,15 @@ import type { PurchasesPackage } from "react-native-purchases";
 
 import { PrimaryButton } from "../src/components/Buttons";
 import Backdrop from "../src/components/Backdrop";
+import SignInSheet from "../src/components/SignInSheet";
+import { canSignIn } from "../src/components/SocialSignInButtons";
 import { useApp } from "../src/state/AppContext";
 import {
   getCustomerInfo,
   getOffering,
   hasPremium,
   isPurchasesAvailable,
+  linkUser,
   managementUrl,
   purchase,
   restore,
@@ -39,6 +42,7 @@ import {
   periodKey,
   savingsPercent,
 } from "../src/premium/packages";
+import type { AuthUser } from "../src/services/auth";
 import { logEvent } from "../src/services/firebase";
 import { links } from "../src/services/env";
 import { fonts, palette } from "../src/theme/colors";
@@ -120,7 +124,7 @@ function SignalRings() {
 export default function Paywall() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { theme, refreshPremium, isPremium } = useApp();
+  const { theme, refreshPremium, isPremium, user } = useApp();
   const insets = useSafeAreaInsets();
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -128,6 +132,7 @@ export default function Paywall() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
   const showError = useCallback((key: string) => setMessage({ text: t(key), tone: "error" }), [t]);
 
   useEffect(() => {
@@ -217,6 +222,38 @@ export default function Paywall() {
     }
     showError(ERROR_KEYS[res.error ?? "unknown"]);
   }, [selected, selectedPlan, succeed, showError, t]);
+
+  /**
+   * Premium hesaba bağlanır: misafir önce giriş yapar (bu derlemede giriş
+   * yoksa misafir olarak satın alabilir, aksi halde Premium hiç alınamazdı).
+   */
+  const onCta = useCallback(() => {
+    if (!user && canSignIn()) {
+      setMessage(null);
+      logEvent("paywall_signin_prompt");
+      setSignInOpen(true);
+      return;
+    }
+    doPurchase();
+  }, [user, doPurchase]);
+
+  const onSignedIn = useCallback(
+    async (u: AuthUser) => {
+      setSignInOpen(false);
+      setBusy(true);
+      // Satın alma bu hesaba yazılsın diye önce RevenueCat kimliği değişir.
+      const info = await linkUser(u.uid);
+      setBusy(false);
+      // Hesapta zaten Premium varsa (ör. başka cihazda alınmış) tekrar ödetme.
+      if (hasPremium(info)) {
+        logEvent("purchase_restored", { via: "signin" });
+        await succeed();
+        return;
+      }
+      doPurchase();
+    },
+    [succeed, doPurchase]
+  );
 
   const doRestore = useCallback(async () => {
     setMessage(null);
@@ -379,7 +416,11 @@ export default function Paywall() {
                     {loading ? (
                       <ActivityIndicator color={theme.gold} style={styles.planLoading} />
                     ) : (
-                      <Text style={[styles.planPrice, { color: active ? theme.gold : theme.text }]}>
+                      <Text
+                        style={[styles.planPrice, { color: active ? theme.gold : theme.text }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
                         {priceString}
                       </Text>
                     )}
@@ -411,7 +452,7 @@ export default function Paywall() {
           <View style={{ marginTop: 22 }}>
             <PrimaryButton
               label={t("premium.cta")}
-              onPress={doPurchase}
+              onPress={onCta}
               loading={busy}
               disabled={busy}
               variant="gold"
@@ -443,6 +484,12 @@ export default function Paywall() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <SignInSheet
+        visible={signInOpen}
+        onClose={() => setSignInOpen(false)}
+        onSignedIn={onSignedIn}
+      />
     </View>
   );
 }
