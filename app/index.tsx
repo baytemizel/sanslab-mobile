@@ -152,10 +152,11 @@ const styles = StyleSheet.create({
   },
   brandRow: { flexDirection: "row" },
   topActions: { flexDirection: "row", gap: 10 },
+  // fontWeight verilmez: Android'de özel fontla birlikte verilince sistem
+  // fontuna düşüyordu; kalınlığı doğrudan Sora ExtraBold dosyası taşır.
   brand: {
     fontSize: 26,
     fontFamily: fonts.displayHeavy,
-    fontWeight: "900",
     letterSpacing: -0.5,
   },
   iconBtn: {

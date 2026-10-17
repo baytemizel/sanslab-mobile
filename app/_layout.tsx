@@ -87,6 +87,11 @@ function RootNavigator({ onReady }: { onReady: () => void }) {
           headerTitleStyle: { fontFamily: "Sora_700Bold", color: theme.text },
           headerBackButtonDisplayMode: "minimal",
           contentStyle: { backgroundColor: "transparent" },
+          // Ekranlar şeffaf (ortak Backdrop görünsün diye). Varsayılan geçişte
+          // eski ekran 450ms boyunca yerinde kalıp yenisiyle üst üste biniyordu;
+          // kısa çapraz geçişte ikisi birlikte solar.
+          animation: "fade",
+          animationDuration: 200,
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -102,11 +107,20 @@ function RootNavigator({ onReady }: { onReady: () => void }) {
         <Stack.Screen name="account" options={{ title: "" }} />
         <Stack.Screen
           name="paywall"
-          options={{ presentation: "modal", title: "", headerShown: false }}
+          options={{
+            presentation: "modal",
+            title: "",
+            headerShown: false,
+            animation: "slide_from_bottom",
+          }}
         />
         <Stack.Screen
           name="(auth)"
-          options={{ presentation: "modal", headerShown: false }}
+          options={{
+            presentation: "modal",
+            headerShown: false,
+            animation: "slide_from_bottom",
+          }}
         />
       </Stack>
     </View>

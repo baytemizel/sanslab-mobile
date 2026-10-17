@@ -104,15 +104,23 @@ export default function History() {
     <View style={styles.flex}>
       <Stack.Screen options={{ title: t("history.title") }} />
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: insets.top + 56,
-          paddingBottom: insets.bottom + 40,
-        }}
+        contentContainerStyle={[
+          {
+            paddingHorizontal: 20,
+            paddingTop: insets.top + 56,
+            paddingBottom: insets.bottom + 40,
+          },
+          // Boş durum bloğu ekranın dikey ortasında dursun: alt boşluk üsttekine eşit.
+          history.length === 0 && {
+            flexGrow: 1,
+            justifyContent: "center",
+            paddingBottom: insets.top + 56,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {history.length === 0 ? (
-          <View style={[styles.empty, { borderColor: theme.border }]}>
+          <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: theme.goldFill }]}>
               <Feather name="clock" size={24} color={theme.onGold} />
             </View>
@@ -303,9 +311,6 @@ const styles = StyleSheet.create({
   },
   clearText: { fontSize: 13.5, fontFamily: fonts.bodySemi, fontWeight: "700" },
   empty: {
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    borderRadius: 24,
     padding: 30,
     alignItems: "center",
   },
