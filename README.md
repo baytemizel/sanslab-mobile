@@ -169,6 +169,9 @@ güncellemede korunur, sil-kur/yeni telefonda Android yedeği geri yüklense bil
 akış yeniden gösterilir — `src/state/onboarding.ts`). Splash, kullanıcı doğru ekrana
 yönlendirildikten sonra kapanır. Anahtar/native modül
 eksikse servisler sessizce devre dışı kalır ve uygulama çalışmaya devam eder.
+Splash logosu iOS'ta 400pt, Android'de 264dp (`app.json`): Android 12+ splash
+ikonunu 192dp çaplı daireyle kırpar ve `assets/splash.png` bu genişlikte o
+daireye tam sığar — Android değeri büyütülürse "Şans Lab" yazısı kesilir.
 
 ### Teknoloji
 

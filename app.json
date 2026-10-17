@@ -45,11 +45,14 @@
         {
           "image": "./assets/splash.png",
           "backgroundColor": "#08071A",
-          "imageWidth": 200,
+          "imageWidth": 400,
           "resizeMode": "contain",
           "dark": {
             "image": "./assets/splash.png",
             "backgroundColor": "#08071A"
+          },
+          "android": {
+            "imageWidth": 264
           }
         }
       ],

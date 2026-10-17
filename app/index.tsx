@@ -181,7 +181,9 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     maxWidth: 300,
   },
-  heroBalls: { flexDirection: "row", marginTop: 22, marginBottom: 8 },
+  // Topun hâlesi çapının 1.5 katı; Ball'ın 9'luk marjına eklenen boşluk
+  // hâlelerin üst üste binmesini önler (44'lük topta merkezler arası 69).
+  heroBalls: { flexDirection: "row", gap: 16, marginTop: 22, marginBottom: 8 },
   promoWrap: { marginTop: 14, marginBottom: 26 },
   promo: {
     flexDirection: "row",
