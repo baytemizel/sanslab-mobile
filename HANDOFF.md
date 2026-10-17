@@ -90,7 +90,8 @@ platformun Firebase dosyası da mevcut.
 | Alan | Şu an | Yapılacak |
 |------|-------|-----------|
 | `eas.projectId` | `93ce342c-…-e0783dcc9e96` ✅ | Ayarlandı — dokunmayın |
-| `revenuecat.ios` / `.android` | `*_REPLACE_ME` | RevenueCat public SDK key'leri |
+| `revenuecat.android` | `goog_dKPy…NhGi` ✅ | Ayarlandı — public SDK key, uygulamaya gömülmesi güvenli |
+| `revenuecat.ios` | `appl_REPLACE_ME` | RevenueCat iOS public SDK key'i |
 | `admob.*` | `ca-app-pub-XXXX/XXXX` | Gerçek AdMob ad unit ID'leri |
 | `auth.googleWebClientId` | `256609557198-q0kg…apps.googleusercontent.com` ✅ | Ayarlandı — Android'de çalışması için Firebase'e SHA-1 parmak izleri eklenmeli |
 | `auth.facebookAppId` / `.facebookClientToken` | `1879696566334647` / `15d5…7241` ✅ | Ayarlandı — App Secret yalnızca Firebase'de, uygulamaya konmaz |
@@ -164,13 +165,17 @@ erişilemezse gönderim reddedilir.
 
 1. RevenueCat projesi oluştur, App Store ve Play uygulamalarını bağla.
 2. **Entitlement:** `premium` (kod bu adı bekliyor — `src/services/revenuecat.ts`).
-3. **Offering:** `default`; aylık / yıllık / ömür boyu paketleri ekle.
+3. **Offering:** `default`; içine `$rc_monthly` ve `$rc_annual` paketlerini ekle
+   (paywall yalnızca bu ikisini gösterir — `app/paywall.tsx` → `PLANS`).
 4. App Store Connect ve Play Console'da ürün ID'lerini oluştur, RevenueCat'e bağla.
 5. Public SDK key'lerini `extra.revenuecat`'e (ya da `.env`) yaz.
+   Android (`goog_…`) ✅ ayarlandı; iOS (`appl_…`) bekliyor.
 
-Paywall offering'i otomatik çeker; **fiyat kodda sabitlenmez**. Yıllık plan
-varsayılan seçilir ve aylığa göre tasarruf yüzdesi rozeti hesaplanır
-(`src/premium/packages.ts`).
+Paywall offering'i otomatik çeker; mağaza bağlıyken **her zaman mağazanın
+yerelleştirilmiş fiyatı** gösterilir. Paket yüklenemezse `LIST_PRICES_USD`
+(aylık $0.49 / yıllık $4.90, `src/premium/packages.ts`) gösterilir — mağaza
+fiyatlarıyla aynı tutun. Yıllık plan varsayılan seçilir ve aylığa göre tasarruf
+yüzdesi rozeti hesaplanır.
 
 Giriş yapan kullanıcı için `Purchases.logIn(uid)` otomatik çağrılır → premium
 cihazlar arasında taşınır.
