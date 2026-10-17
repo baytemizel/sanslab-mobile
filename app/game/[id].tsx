@@ -212,13 +212,14 @@ export default function GameScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* içerikle birlikte kayan header */}
-        <ScreenHeader title={t(game.nameKey)} tint={game.color} />
+        {/* oyun adı aşağıdaki blokta yazdığı için header yalnızca geri butonu */}
+        <ScreenHeader tint={game.color} />
 
         {/* title + recipe */}
         <View
           style={[
             styles.gameHeader,
-            { borderColor: theme.border, backgroundColor: theme.card },
+            { borderColor: game.color, backgroundColor: theme.card },
           ]}
         >
           <View style={[styles.gameOrb, { backgroundColor: game.color }]} />
@@ -243,7 +244,7 @@ export default function GameScreen() {
         </View>
 
         {/* mode */}
-        <Text style={[styles.label, { color: theme.text }]}>
+        <Text style={[styles.label, { color: theme.subText }]}>
           {t("generator.mode")}
         </Text>
         <Segmented
@@ -268,7 +269,7 @@ export default function GameScreen() {
         {/* Hızlı On count */}
         {game.variableCount && (
           <View style={{ marginTop: 22 }}>
-            <Text style={[styles.label, { color: theme.text }]}>
+            <Text style={[styles.label, { color: theme.subText }]}>
               {t("generator.count")}: {count}
             </Text>
             <View style={styles.counterRow}>
@@ -307,7 +308,7 @@ export default function GameScreen() {
         )}
 
         {/* rows */}
-        <Text style={[styles.label, { color: theme.text, marginTop: 22 }]}>
+        <Text style={[styles.label, { color: theme.subText, marginTop: 22 }]}>
           {t("generator.rowsTitle")}
         </Text>
         <Segmented
@@ -408,24 +409,23 @@ const styles = StyleSheet.create({
   },
   statsBtnText: { fontFamily: fonts.bodySemi, fontWeight: "700", fontSize: 12.5 },
   gameOrb: { width: 14, height: 44, borderRadius: 7 },
+  // fontWeight verilmez: Android'de özel fontla birlikte sistem fontuna düşer.
   gameName: {
     fontSize: 22,
     fontFamily: fonts.displayHeavy,
-    fontWeight: "900",
     letterSpacing: -0.4,
   },
   gameRule: { fontSize: 13, fontFamily: fonts.body, marginTop: 3 },
   label: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontFamily: fonts.bodyBold,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-    marginBottom: 11,
+    letterSpacing: 1.2,
+    marginBottom: 10,
     textTransform: "uppercase",
-    opacity: 0.9,
+    opacity: 0.75,
   },
   descRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  desc: { fontSize: 12, fontFamily: fonts.body, lineHeight: 17, flex: 1 },
+  desc: { fontSize: 11.5, fontFamily: fonts.body, lineHeight: 16, flex: 1, opacity: 0.75 },
   counterRow: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   countChip: {
     width: 44,
