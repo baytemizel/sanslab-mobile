@@ -59,9 +59,7 @@ export default function GameCard({ game, onPress }: Props) {
         </Text>
       </View>
 
-      <View style={[styles.chevron, { borderColor: theme.border }]}>
-        <Feather name="arrow-up-right" size={18} color={theme.gold} />
-      </View>
+      <Feather name="chevron-right" size={20} color={theme.gold} />
     </Pressable>
   );
 }
@@ -81,8 +79,4 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   title: { fontSize: 18, fontFamily: fonts.display, fontWeight: "800", letterSpacing: -0.2 },
   tagline: { fontSize: 12.5, fontFamily: fonts.body, marginTop: 3 },
-  chevron: {
-    width: 34, height: 34, borderRadius: 17, borderWidth: 1,
-    alignItems: "center", justifyContent: "center",
-  },
 });
