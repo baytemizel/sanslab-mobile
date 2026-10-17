@@ -109,9 +109,10 @@ export default function Account() {
   return (
     <ScrollView
       contentContainerStyle={{
+        flexGrow: 1,
         paddingHorizontal: 20,
         paddingTop: insets.top + 60,
-        paddingBottom: 44,
+        paddingBottom: insets.bottom + 24,
       }}
       showsVerticalScrollIndicator={false}
     >
@@ -169,8 +170,9 @@ export default function Account() {
         </View>
       </View>
 
-      {/* eylemler */}
-      <View style={{ gap: 11, marginTop: 24 }}>
+      {/* eylemler — ekranın altında */}
+      <View style={{ flex: 1, minHeight: 24 }} />
+      <View>
         <Pressable
           onPress={doSignOut}
           disabled={busy}
@@ -192,12 +194,10 @@ export default function Account() {
             setConfirmOpen(true);
           }}
           disabled={busy}
-          style={[styles.row, { backgroundColor: theme.card, borderColor: "#F5333B44" }]}
+          hitSlop={8}
+          style={styles.deleteLink}
         >
-          <Feather name="trash-2" size={17} color="#F5333B" />
-          <Text style={[styles.rowLabel, { color: "#F5333B" }]}>
-            {t("account.delete")}
-          </Text>
+          <Text style={styles.deleteText}>{t("account.delete")}</Text>
         </Pressable>
       </View>
 
@@ -310,11 +310,18 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   rowLabel: { fontSize: 15, fontFamily: fonts.bodyMed, fontWeight: "600" },
+  deleteLink: { alignSelf: "center", marginTop: 18, paddingVertical: 4 },
+  deleteText: {
+    color: "#F5333B",
+    fontSize: 13,
+    fontFamily: fonts.bodyMed,
+    fontWeight: "600",
+  },
   note: {
     fontSize: 11.5,
     fontFamily: fonts.body,
     lineHeight: 17,
-    marginTop: 16,
+    marginTop: 10,
     textAlign: "center",
   },
   emptyCard: {
