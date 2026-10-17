@@ -133,7 +133,7 @@ export default {
     open: "İstatistikleri gör",
   },
   premium: {
-    title: "ŞansLab Premium",
+    title: "Premium",
     subtitle: "Reklamsız deneyim, tüm modlar ve sınırsız geçmiş",
     activeTitle: "Premium etkin",
     activeSubtitle: "Tüm özellikler açık. Desteğin için teşekkürler.",

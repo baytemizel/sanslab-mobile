@@ -141,7 +141,7 @@ export default function Paywall() {
           </View>
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text style={[styles.title, !isPremium && styles.premiumTitle, { color: theme.text }]}>
           {isPremium ? t("premium.activeTitle") : t("premium.title")}
         </Text>
         <Text style={[styles.subtitle, { color: theme.subText }]}>
@@ -339,6 +339,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: -0.5,
   },
+  // "Premium" markası serif italik; fontWeight verilmez (Android'de sistem fontuna düşer).
+  premiumTitle: { fontFamily: fonts.premium, fontWeight: "normal", fontSize: 34, letterSpacing: 0.3 },
   subtitle: {
     fontSize: 15,
     fontFamily: fonts.body,

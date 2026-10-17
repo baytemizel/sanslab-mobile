@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  promoTitle: { fontSize: 16, fontFamily: fonts.display, fontWeight: "800" },
+  promoTitle: { fontSize: 19, fontFamily: fonts.premium, letterSpacing: 0.2 },
   promoSub: { fontSize: 12.5, fontFamily: fonts.body, marginTop: 2 },
   sectionTitle: {
     fontSize: 12,

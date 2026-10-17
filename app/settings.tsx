@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
+  TextStyle,
   ScrollView,
   StyleSheet,
   Pressable,
@@ -67,39 +68,58 @@ export default function Settings() {
     right,
     onPress,
     danger,
+    labelStyle,
+    gold,
   }: {
     icon: FeatherName;
     label: string;
     right?: React.ReactNode;
     onPress?: () => void;
     danger?: boolean;
-  }) => (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      accessibilityRole={onPress ? "button" : undefined}
-      style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}
-    >
-      <View
+    labelStyle?: TextStyle;
+    /** Yıldız sarısı zeminli vurgulu satır (Premium). */
+    gold?: boolean;
+  }) => {
+    const fg = danger ? "#F5333B" : undefined;
+    // Yıldız kutusunun sarısı, aynı saydamlıkla.
+    const goldTint = theme.dark ? "rgba(244,192,74,0.12)" : "#FFF6E2";
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityRole={onPress ? "button" : undefined}
         style={[
-          styles.rowIcon,
-          {
-            backgroundColor: theme.dark ? "rgba(244,192,74,0.12)" : "#FFF6E2",
-          },
+          styles.row,
+          gold
+            ? { backgroundColor: goldTint, borderColor: "rgba(244,192,74,0.28)" }
+            : { backgroundColor: theme.card, borderColor: theme.border },
         ]}
       >
-        <Feather name={icon} size={16} color={danger ? "#F5333B" : theme.gold} />
-      </View>
-      <Text style={[styles.rowLabel, { color: danger ? "#F5333B" : theme.text }]}>
-        {label}
-      </Text>
-      <View style={{ flex: 1 }} />
-      {right ??
-        (onPress ? (
-          <Feather name="chevron-right" size={18} color={theme.subText} />
-        ) : null)}
-    </Pressable>
-  );
+        <View
+          style={[
+            styles.rowIcon,
+            {
+              backgroundColor: gold
+                ? theme.dark
+                  ? "rgba(244,192,74,0.2)"
+                  : "#FCEBC4"
+                : goldTint,
+            },
+          ]}
+        >
+          <Feather name={icon} size={16} color={fg ?? theme.gold} />
+        </View>
+        <Text style={[styles.rowLabel, labelStyle, { color: fg ?? theme.text }]}>
+          {label}
+        </Text>
+        <View style={{ flex: 1 }} />
+        {right ??
+          (onPress ? (
+            <Feather name="chevron-right" size={18} color={fg ?? theme.subText} />
+          ) : null)}
+      </Pressable>
+    );
+  };
 
   return (
     <ScrollView
@@ -146,6 +166,8 @@ export default function Settings() {
           <Row
             icon="star"
             label={t("premium.title")}
+            labelStyle={styles.premiumLabel}
+            gold
             onPress={() => router.push("/paywall")}
           />
         )}
@@ -270,6 +292,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowLabel: { fontSize: 15, fontFamily: fonts.bodyMed, fontWeight: "600" },
+  // "Premium" markası: serif italik; ağırlığı font dosyası taşır.
+  premiumLabel: { fontFamily: fonts.premium, fontWeight: "normal", fontSize: 17 },
   rowValue: { fontSize: 13.5, fontFamily: fonts.body },
   modalIcon: {
     width: 52,

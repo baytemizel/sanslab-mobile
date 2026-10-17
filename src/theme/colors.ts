@@ -108,6 +108,8 @@ export const fonts = {
   bodyMed: "Inter_500Medium",
   bodySemi: "Inter_600SemiBold",
   bodyBold: "Inter_700Bold",
+  /** "Premium" markası: zarif serif italik. */
+  premium: "PlayfairDisplay_800ExtraBold_Italic",
 };
 
 export const spacing = (n: number) => n * 8;

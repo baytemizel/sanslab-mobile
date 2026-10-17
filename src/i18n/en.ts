@@ -133,7 +133,7 @@ export default {
     open: "View statistics",
   },
   premium: {
-    title: "ŞansLab Premium",
+    title: "Premium",
     subtitle: "Ad-free, every mode, and unlimited history",
     activeTitle: "Premium is active",
     activeSubtitle: "Everything is unlocked. Thanks for supporting the app.",

@@ -21,6 +21,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
+import { PlayfairDisplay_800ExtraBold_Italic } from "@expo-google-fonts/playfair-display";
 
 import { AppProvider, useApp } from "../src/state/AppContext";
 import Backdrop from "../src/components/Backdrop";
@@ -140,6 +141,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    PlayfairDisplay_800ExtraBold_Italic,
   });
 
   useEffect(() => {
